@@ -32,7 +32,6 @@ workflows:
         title: Step Test
         inputs:
         - itunescon_user: ${ITUNESCON_USER}
-        - itunescon_user: ${ITUNESCON_USER}
         - password: ${PASSWORD}
         - app_password: ${APP_PASSWORD}
         run_if: true

@@ -1,6 +1,6 @@
-# Deploy to TestFlight
+# Deploy to iTunes Connect
 
-Uploads binaries only to [TestFlight](https://itunesconnect.apple.com/).
+Uploads binaries only to [iTunes Connect](https://itunesconnect.apple.com/).
 
 
 ## How to use this Step

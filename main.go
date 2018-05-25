@@ -15,23 +15,38 @@ import (
 type Config struct {
 	IpaPath           string          `env:"ipa_path"`
 	PkgPath           string          `env:"pkg_path"`
-	ItunesConnectUser stepconf.Secret `env:"itunescon_user,required"`
+	ItunesConnectUser string          `env:"itunescon_user,required"`
 	Password          stepconf.Secret `env:"password"`
 	AppPassword       stepconf.Secret `env:"app_password"`
+}
+
+func (cfg Config) validateEnvs() error {
+	if err := input.ValidateIfNotEmpty(cfg.IpaPath); err != nil {
+		if err := input.ValidateIfNotEmpty(cfg.PkgPath); err != nil {
+			return fmt.Errorf("neither ipa_path nor pkg_path is provided")
+		}
+	}
+
+	if err := input.ValidateIfNotEmpty(string(cfg.Password)); err != nil {
+		if err := input.ValidateIfNotEmpty(string(cfg.AppPassword)); err != nil {
+			return fmt.Errorf("neither password nor app_password is provided")
+		}
+	}
+
+	return nil
 }
 
 func main() {
 	var cfg Config
 	if err := stepconf.Parse(&cfg); err != nil {
-		log.Errorf("Error: %s\n", err)
-		os.Exit(1)
+		failf("Error: %s", err)
 	}
 
 	stepconf.Print(cfg)
 	fmt.Println()
 
 	if err := cfg.validateEnvs(); err != nil {
-		failf("input error: %s", err)
+		failf("Input error: %s", err)
 	}
 
 	password := string(cfg.Password)
@@ -44,7 +59,7 @@ func main() {
 		filePth = cfg.PkgPath
 	}
 
-	cmd := command.New(`/Applications/Xcode.app/Contents/Applications/Application Loader.app/Contents/Frameworks/ITunesSoftwareService.framework/Support/altool`, "--upload-app", "-f", filePth, "-u", string(cfg.ItunesConnectUser), "-p", password)
+	cmd := command.New(`/Applications/Xcode.app/Contents/Applications/Application Loader.app/Contents/Frameworks/ITunesSoftwareService.framework/Support/altool`, "--upload-app", "-f", filePth, "-u", cfg.ItunesConnectUser, "-p", password)
 	cmd.SetStdout(os.Stdout)
 	cmd.SetStderr(os.Stderr)
 
@@ -58,22 +73,6 @@ func main() {
 
 	fmt.Println()
 	log.Donef("IPA uploaded")
-}
-
-func (cfg Config) validateEnvs() error {
-	if err := input.ValidateIfNotEmpty(cfg.IpaPath); err != nil {
-		if err := input.ValidateIfNotEmpty(cfg.PkgPath); err != nil {
-			return fmt.Errorf("Neither ipa_path nor pkg_path is provided")
-		}
-	}
-
-	if err := input.ValidateIfNotEmpty(string(cfg.Password)); err != nil {
-		if err := input.ValidateIfNotEmpty(string(cfg.AppPassword)); err != nil {
-			return fmt.Errorf("Neither password nor app_password is provided")
-		}
-	}
-
-	return nil
 }
 
 func failf(format string, v ...interface{}) {

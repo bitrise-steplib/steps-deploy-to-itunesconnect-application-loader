@@ -1,13 +1,14 @@
-title: Deploy to TestFlight
-summary: Uploads binaries only to [TestFlight](https://itunesconnect.apple.com/).
-description: |
-  Uploads binaries only to [TestFlight](https://itunesconnect.apple.com/)
+title: Deploy to iTunes Connect - Application Loader
+summary: Uploads binaries (.ipa / .pkg files) to [iTunes Connect](https://itunesconnect.apple.com/).
+description: |-
+  Uploads binaries (.ipa / .pkg files) to [iTunes Connect](https://itunesconnect.apple.com/)
   using the Apple's Application Loader.
   
   Setup guide and notes:
+    
   * Register an app on iTunes Connect, on the **My Apps** page. Click on the *plus sign* and select the **New App** option. This requires an **admin** account.
-  * Requires an app signed with **App Store iOS distibution Provisioning Profile**.
-  * Every build which you want to push to TestFlight have to have a **unique build and version number** pair (*increment either or both before a new deploy to TestFlight*).
+  * Requires an app signed with **App Store distibution Provisioning Profile**.
+  * Every build which you want to push to iTunes Connect have to have a **unique build and version number** pair (*increment either or both before a new deploy to iTunes Connect*).
 website: https://github.com/bitrise-steplib/steps-deploy-to-itunesconnect
 source_code_url: https://github.com/bitrise-steplib/steps-deploy-to-itunesconnect
 support_url: https://github.com/bitrise-steplib/steps-deploy-to-itunesconnect/issues
