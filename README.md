@@ -1,6 +1,6 @@
 # Deploy to iTunes Connect
 
-Uploads binaries only to [iTunes Connect](https://itunesconnect.apple.com/).
+Uploads binaries (.ipa / .pkg files) to [iTunes Connect](https://itunesconnect.apple.com/).
 
 
 ## How to use this Step
