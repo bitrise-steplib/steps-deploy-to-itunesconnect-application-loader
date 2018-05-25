@@ -95,7 +95,7 @@ workflows:
       StepLib you want to share this step into. Once you're done with forking
       the repository you should set your own fork's git clone URL
       in the `.bitrise.secrets.yml` file, or here in the `envs` section,
-      as the value of the `MY_STEPLIB_REPO_FORK_GIT_URL` environment.
+      as the value of the `MY_STEPLIB_REPO_FORK_GIT_URL` environment. 
 
       You're now ready to share this Step, just make sure that
       the `BITRISE_STEP_ID` and `BITRISE_STEP_VERSION`
