@@ -1,4 +1,4 @@
-# Deploy to iTunes Connect
+# Deploy to iTunes Connect - Application Loader
 
 Uploads binaries (.ipa / .pkg files) to [iTunes Connect](https://itunesconnect.apple.com/).
 
