@@ -9,9 +9,9 @@ description: |-
   * Register an app on iTunes Connect, on the **My Apps** page. Click on the *plus sign* and select the **New App** option. This requires an **admin** account.
   * Requires an app signed with **App Store distibution Provisioning Profile**.
   * Every build which you want to push to iTunes Connect have to have a **unique build and version number** pair (*increment either or both before a new deploy to iTunes Connect*).
-website: https://github.com/bitrise-steplib/steps-deploy-to-itunesconnect
-source_code_url: https://github.com/bitrise-steplib/steps-deploy-to-itunesconnect
-support_url: https://github.com/bitrise-steplib/steps-deploy-to-itunesconnect/issues
+website: https://github.com/bitrise-steplib/steps-deploy-to-itunesconnect-application-loader
+source_code_url: https://github.com/bitrise-steplib/steps-deploy-to-itunesconnect-application-loader
+support_url: https://github.com/bitrise-steplib/steps-deploy-to-itunesconnect-application-loader/issues
 project_type_tags:
   - ios
   - macos
@@ -24,7 +24,7 @@ type_tags:
 
 toolkit:
   go:
-    package_name: github.com/bitrise-steplib/steps-deploy-to-itunesconnect
+    package_name: github.com/bitrise-steplib/steps-deploy-to-itunesconnect-application-loader
 
 inputs:
 - itunescon_user: ""
