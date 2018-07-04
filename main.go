@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/log"
@@ -64,8 +65,11 @@ func main() {
 	cmd.SetStderr(os.Stderr)
 
 	fileName := filepath.Base(filePth)
+	commandStr := cmd.PrintableCommandArgs()
+	commandStr = strings.Replace(commandStr, password, "[REDACTED]", -1)
+
 	log.Infof("Uploading - %s ...", fileName)
-	log.Printf("$ %s", cmd.PrintableCommandArgs())
+	log.Printf("$ %s", commandStr)
 
 	if err := cmd.Run(); err != nil {
 		failf("Uploading IPA failed: %s", err)
