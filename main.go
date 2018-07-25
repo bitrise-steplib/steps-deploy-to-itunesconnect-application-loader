@@ -64,8 +64,11 @@ func main() {
 	if err != nil {
 		failf("Failed to find Xcode path, error: %s", err)
 	}
-	altool := filepath.Join(xcpath, "/Contents/Applications/Application Loader.app/Contents/Frameworks/ITunesSoftwareService.framework/Support/altool")
 
+	log.Printf("Xcode path: %s", xcpath)
+	fmt.Println()
+
+	altool := filepath.Join(xcpath, "/Contents/Applications/Application Loader.app/Contents/Frameworks/ITunesSoftwareService.framework/Support/altool")
 	cmd := command.New(altool, "--upload-app", "-f", filePth, "-u", cfg.ItunesConnectUser, "-p", password)
 	cmd.SetStdout(os.Stdout)
 	cmd.SetStderr(os.Stderr)
@@ -88,7 +91,9 @@ func main() {
 func xcodePath() (string, error) {
 	cmd := command.New("xcode-select", "-p")
 
-	log.Printf("Get Xcode path:\n%s", cmd.PrintableCommandArgs())
+	log.Infof("Get Xcode path")
+	log.Printf(cmd.PrintableCommandArgs())
+
 	resp, err := cmd.RunAndReturnTrimmedOutput()
 	if err != nil {
 		return "", err
