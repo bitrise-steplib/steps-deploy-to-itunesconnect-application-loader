@@ -99,6 +99,8 @@ func xcodePath() (string, error) {
 		return "", err
 	}
 
+	// Default: /Applications/Xcode.app/Contents/Developer
+	// Beta: /Applications/Xcode-beta.app/Contents/Developer
 	split := strings.Split(resp, "/Contents")
 	if len(split) != 2 {
 		return "", fmt.Errorf("failed to find Xcode path")
