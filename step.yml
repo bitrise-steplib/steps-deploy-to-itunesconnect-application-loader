@@ -39,6 +39,7 @@ inputs:
       Password for the specified Apple ID.
       **NOTE:** Password or Application specific password is required
     is_required: false
+    is_sensitive: true
 - app_password: ""
   opts:
     title: "Application Specific Password"
@@ -49,6 +50,7 @@ inputs:
       surpass Two Factor Authentication.
       **NOTE:** Password or Application specific password is required
     is_required: false
+    is_sensitive: true
 - ipa_path: "$BITRISE_IPA_PATH"
   opts:
     title: "IPA path"
