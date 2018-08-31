@@ -6,9 +6,9 @@ description: |-
   
   Setup guide and notes:
     
-  * Register an app on iTunes Connect, on the **My Apps** page. Click on the *plus sign* and select the **New App** option. This requires an **admin** account.
+  * Register an app on the **My Apps** page of iTunes Connect. Click on the *plus sign* and select the **New App** option. This requires an **admin** account.
   * Requires an app signed with **App Store distibution Provisioning Profile**.
-  * Every build which you want to push to iTunes Connect have to have a **unique build and version number** pair (*increment either or both before a new deploy to iTunes Connect*).
+  * Every build which you want to push to iTunes Connect must have a **unique build and version number** pair (*increment either or both before a new deploy to iTunes Connect*).
 website: https://github.com/bitrise-steplib/steps-deploy-to-itunesconnect-application-loader
 source_code_url: https://github.com/bitrise-steplib/steps-deploy-to-itunesconnect-application-loader
 support_url: https://github.com/bitrise-steplib/steps-deploy-to-itunesconnect-application-loader/issues
@@ -38,7 +38,7 @@ inputs:
     title: "Password"
     description: |- 
       Password for the specified Apple ID.
-      **NOTE:** Password or Application specific password is required
+      **NOTE:** Password or Application specific password is required.
     is_required: false
     is_sensitive: true
 - app_password: ""
@@ -49,18 +49,18 @@ inputs:
       **NOTE:** Application specific passwords can be created on the
       [AppleID Website](https://appleid.apple.com). It can be used to
       surpass Two Factor Authentication.
-      **NOTE:** Password or Application specific password is required
+      **NOTE:** Password or Application specific password is required.
     is_required: false
     is_sensitive: true
 - ipa_path: "$BITRISE_IPA_PATH"
   opts:
     title: "IPA path"
     description: |-
-      Path to your IPA file, to be deployed.
+      Path to your IPA file to be deployed.
       **NOTE:** This input or `PKG path` is required.
 - pkg_path: "$BITRISE_PKG_PATH"
   opts:
     title: "PKG path"
     description: |-
-      Path to your PKG file, to be deployed.
+      Path to your PKG file to be deployed.
       **NOTE:** This input or `IPA path` is required.
