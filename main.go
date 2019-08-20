@@ -92,7 +92,7 @@ func main() {
 /*
 	Returns a command.Model object, that when executed will run altool & upload the given ipa file.
 
-	Note: Provide ascProvider as "" to not apply --asc_provider.
+	Note: Provide ascProvider as "" to not apply --asc-provider.
 
 	Parameters:
 	- altoolPath: The path to the altool executable.
@@ -105,7 +105,7 @@ func altoolCommand(altoolPath string, ipaPath string, ascUser string, ascPasswor
 	if ascProvider == "" {
 		return command.New(altoolPath, "--upload-app", "-f", ipaPath, "-u", ascUser, "-p", ascPassword)
 	} else {
-		return command.New(altoolPath, "--upload-app", "-f", ipaPath, "-u", ascUser, "-p", ascPassword, "--asc_provider", ascProvider)
+		return command.New(altoolPath, "--upload-app", "-f", ipaPath, "-u", ascUser, "-p", ascPassword, "--asc-provider", ascProvider)
 	}
 }
 

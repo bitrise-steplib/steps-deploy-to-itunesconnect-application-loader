@@ -64,7 +64,9 @@ inputs:
     description: |-
       Path to your PKG file to be deployed.
       **NOTE:** This input or `IPA path` is required.
-- asc_provider: "App Store Connect Provider"
+- asc_provider: ""
+  opts:
+    title: "App Store Connect Provider"
     description: |-
       The Team ID the app should be uploaded under.
       **NOTE:** If you have an account with multiple teams available, this input is required.
