@@ -19,6 +19,7 @@ type Config struct {
 	ItunesConnectUser string          `env:"itunescon_user,required"`
 	Password          stepconf.Secret `env:"password"`
 	AppPassword       stepconf.Secret `env:"app_password"`
+	ASCProvider       string          `env:"asc_provider"`
 }
 
 func (cfg Config) validateEnvs() error {
@@ -69,7 +70,7 @@ func main() {
 	fmt.Println()
 
 	altool := filepath.Join(xcpath, "/Contents/Applications/Application Loader.app/Contents/Frameworks/ITunesSoftwareService.framework/Support/altool")
-	cmd := command.New(altool, "--upload-app", "-f", filePth, "-u", cfg.ItunesConnectUser, "-p", password)
+	cmd := altoolCommand(altool, filePth, cfg.ItunesConnectUser, password, cfg.ASCProvider)
 	cmd.SetStdout(os.Stdout)
 	cmd.SetStderr(os.Stderr)
 
@@ -86,6 +87,26 @@ func main() {
 
 	fmt.Println()
 	log.Donef("IPA uploaded")
+}
+
+/*
+	Returns a command.Model object, that when executed will run altool & upload the given ipa file.
+
+	Note: Provide ascProvider as "" to not apply --asc_provider.
+
+	Parameters:
+	- altoolPath: The path to the altool executable.
+	- ipaPath: The path to the .ipa file that'll be uploaded.
+	- ascUser: The user's App Store Connect username.
+	- ascPassword: The user's App Store Connect password.
+	- ascProvider: The team ID that the .ipa should be uploaded against. Used to specify a team where multiple are available.
+ */
+func altoolCommand(altoolPath string, ipaPath string, ascUser string, ascPassword string, ascProvider string) *command.Model {
+	if ascProvider == "" {
+		return command.New(altoolPath, "--upload-app", "-f", ipaPath, "-u", ascUser, "-p", ascPassword)
+	} else {
+		return command.New(altoolPath, "--upload-app", "-f", ipaPath, "-u", ascUser, "-p", ascPassword, "--asc_provider", ascProvider)
+	}
 }
 
 func xcodePath() (string, error) {
