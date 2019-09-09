@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"strconv"
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/log"
@@ -68,7 +69,12 @@ func main() {
 	log.Printf("Xcode path: %s", xcpath)
 	fmt.Println()
 
-	altool := filepath.Join(xcpath, "/Contents/Applications/Application Loader.app/Contents/Frameworks/ITunesSoftwareService.framework/Support/altool")
+	var altool string
+	if xcodeVersion() < 11 {
+		altool = filepath.Join(xcpath, "/Contents/Applications/Application Loader.app/Contents/Frameworks/ITunesSoftwareService.framework/Support/altool")
+	} else {
+		altool = filepath.Join(xcpath, "xcrun altool")
+	}
 	cmd := command.New(altool, "--upload-app", "-f", filePth, "-u", cfg.ItunesConnectUser, "-p", password)
 	cmd.SetStdout(os.Stdout)
 	cmd.SetStderr(os.Stderr)
@@ -107,6 +113,25 @@ func xcodePath() (string, error) {
 	}
 
 	return split[0], nil
+}
+
+func xcodeVersion() float64 {
+	cmd := command.New("xcodebuild -version | sed -En 's/Xcode[[:space:]]+([0-9\\.]*)/\\1/p'")
+	
+	log.Infof("Get Xcode version")
+	log.Printf(cmd.PrintableCommandArgs())
+	
+	resp, err := cmd.RunAndReturnTrimmedOutput()
+	if err != nil {
+		return -1.0
+	}
+	
+	version, err := strconv.ParseFloat("123", 0, 64)
+	if err != nil {
+		return -2.0
+	}
+	return version
+	
 }
 
 func failf(format string, v ...interface{}) {
