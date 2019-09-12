@@ -8,6 +8,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-xcode/utility"
 	"github.com/bitrise-tools/go-steputils/input"
 	"github.com/bitrise-tools/go-steputils/stepconf"
 )
@@ -68,7 +69,14 @@ func main() {
 	log.Printf("Xcode path: %s", xcpath)
 	fmt.Println()
 
-	altool := filepath.Join(xcpath, "/Contents/Applications/Application Loader.app/Contents/Frameworks/ITunesSoftwareService.framework/Support/altool")
+	xcodeVersion, err := utility.GetXcodeVersion()
+
+	var altool string
+	if err == nil || xcodeVersion.MajorVersion < 11 {
+		altool = filepath.Join(xcpath, "/Contents/Applications/Application Loader.app/Contents/Frameworks/ITunesSoftwareService.framework/Support/altool")
+	} else {
+		altool = filepath.Join(xcpath, "xcrun altool")
+	}
 	cmd := command.New(altool, "--upload-app", "-f", filePth, "-u", cfg.ItunesConnectUser, "-p", password)
 	cmd.SetStdout(os.Stdout)
 	cmd.SetStderr(os.Stderr)

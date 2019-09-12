@@ -20,6 +20,17 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:5aadbccbb7da63727c68ad488ae55b677495cdb3556e5e166d1ec6fdf6543e2e"
+  name = "github.com/bitrise-io/go-xcode"
+  packages = [
+    "models",
+    "utility",
+  ]
+  pruneopts = "UT"
+  revision = "07ccf582b6b1afa2c33e133447a3e22c811ffd90"
+
+[[projects]]
+  branch = "master"
   digest = "1:2c6e7ab0e44a221244ca41c36e980dc2055d522f40cfd8b2494cd49ea3022f5b"
   name = "github.com/bitrise-tools/go-steputils"
   packages = [
@@ -63,6 +74,7 @@
     "github.com/bitrise-io/go-utils/command",
     "github.com/bitrise-io/go-utils/log",
     "github.com/bitrise-io/go-utils/sliceutil",
+    "github.com/bitrise-io/go-xcode/utility",
     "github.com/bitrise-tools/go-steputils/input",
     "github.com/bitrise-tools/go-steputils/stepconf",
     "github.com/stretchr/testify/require",
