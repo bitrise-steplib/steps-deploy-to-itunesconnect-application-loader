@@ -70,9 +70,12 @@ func main() {
 	fmt.Println()
 
 	xcodeVersion, err := utility.GetXcodeVersion()
+	if err != nil {
+		failf("Failed to determine Xcode version, error: %s", err)
+	}
 
 	var altool string
-	if err == nil || xcodeVersion.MajorVersion < 11 {
+	if xcodeVersion.MajorVersion < 11 {
 		altool = filepath.Join(xcpath, "/Contents/Applications/Application Loader.app/Contents/Frameworks/ITunesSoftwareService.framework/Support/altool")
 	} else {
 		altool = filepath.Join(xcpath, "xcrun altool")
