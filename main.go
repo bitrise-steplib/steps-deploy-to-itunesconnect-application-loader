@@ -71,7 +71,7 @@ func main() {
 
 	xcodeVersion, err := utility.GetXcodeVersion()
 	if err != nil {
-		failf("Failed to determine Xcode version, error: err", err)
+		failf("Failed to determine Xcode version, error: %s", err)
 	}
 
 	var altool string
