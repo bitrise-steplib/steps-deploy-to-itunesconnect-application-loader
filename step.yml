@@ -30,15 +30,20 @@ inputs:
 - itunescon_user: ""
   opts:
     title: "Apple ID"
-    description: Login Apple ID for the iTunes Connect site.
-    is_required: true
+    description: |-
+      Login Apple ID for the iTunes Connect site.
+      **NOTE:** There are two methods available for authentication: user name with password, and apiKey with apiIssuer.
+      One of the paris should be provided.
+    is_required: false
     is_sensitive: true
 - password: ""
   opts:
     title: "Password"
     description: |- 
       Password for the specified Apple ID.
-      **NOTE:** Password or Application specific password is required.
+      **NOTE:** There are two methods available for authentication: user name with password, and apiKey with apiIssuer.
+      One of the paris should be provided.
+      **NOTE:** For user name with password authentication Password or Application specific password is required.
     is_required: false
     is_sensitive: true
 - app_password: ""
@@ -49,7 +54,9 @@ inputs:
       **NOTE:** Application specific passwords can be created on the
       [AppleID Website](https://appleid.apple.com). It can be used to
       surpass Two Factor Authentication.
-      **NOTE:** Password or Application specific password is required.
+      **NOTE:** There are two methods available for authentication: user name with password, and apiKey with apiIssuer.
+      One of the paris should be provided.
+      **NOTE:** For user name with password authentication Password or Application specific password is required.
     is_required: false
     is_sensitive: true
 - ipa_path: "$BITRISE_IPA_PATH"
@@ -64,3 +71,25 @@ inputs:
     description: |-
       Path to your PKG file to be deployed.
       **NOTE:** This input or `IPA path` is required.
+- api_key: ""
+  opts:
+    title: "API Key"
+    description: |-
+      Required for JWT authentication while using validation, upload, and notarization.
+      This option will search the following directories in sequence for a private key file
+      with the name of 'AuthKey_<api_key>.p8': './private_keys', '~/private_keys', '~/.private_keys',
+      and '~/.appstoreconnect/private_keys'.
+      **NOTE:** There are two methods available for authentication: user name with password, and apiKey with apiIssuer.
+      One of the paris should be provided.
+      **NOTE:** Only available from XCode 11.0 and above.
+    is_required: false
+- api_issuer: ""
+  opts:
+    title: "Issuer ID"
+    description: |-
+      Issuer ID. Required if --apiKey is specified.
+      **NOTE:** There are two methods available for authentication: user name with password, and apiKey with apiIssuer.
+      One of the paris should be provided.
+      **NOTE:** Only available from XCode 11.0 and above.
+    is_required: false
+
