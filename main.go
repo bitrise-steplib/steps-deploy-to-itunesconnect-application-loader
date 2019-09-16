@@ -74,12 +74,12 @@ func main() {
 		failf("Failed to determine Xcode version, error: %s", err)
 	}
 
-	var cmd command.Model
+	var cmd command.Model*
 	if xcodeVersion.MajorVersion < 11 {
 		altool := filepath.Join(xcpath, "/Contents/Applications/Application Loader.app/Contents/Frameworks/ITunesSoftwareService.framework/Support/altool")
-		cmd = &command.New(altool, "--upload-app", "-f", filePth, "-u", cfg.ItunesConnectUser, "-p", password)
+		cmd = command.New(altool, "--upload-app", "-f", filePth, "-u", cfg.ItunesConnectUser, "-p", password)
 	} else {
-		cmd = &command.New("xcrun", "altool", "--upload-app", "-f", filePth, "-u", cfg.ItunesConnectUser, "-p", password)
+		cmd = command.New("xcrun", "altool", "--upload-app", "-f", filePth, "-u", cfg.ItunesConnectUser, "-p", password)
 	}
 	cmd.SetStdout(os.Stdout)
 	cmd.SetStderr(os.Stderr)
