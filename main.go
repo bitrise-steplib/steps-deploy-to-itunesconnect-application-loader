@@ -78,7 +78,7 @@ func main() {
 	if xcodeVersion.MajorVersion < 11 {
 		altool = filepath.Join(xcpath, "/Contents/Applications/Application Loader.app/Contents/Frameworks/ITunesSoftwareService.framework/Support/altool")
 	} else {
-		altool = filepath.Join(xcpath, "xcrun altool")
+		altool = "xcrun altool"
 	}
 	cmd := command.New(altool, "--upload-app", "-f", filePth, "-u", cfg.ItunesConnectUser, "-p", password)
 	cmd.SetStdout(os.Stdout)
