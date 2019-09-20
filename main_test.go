@@ -1,7 +1,6 @@
 package main
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/bitrise-io/go-utils/sliceutil"
@@ -17,37 +16,97 @@ func Test_xcodePath(t *testing.T) {
 	}
 }
 
-func Test_getAuthOptions(t *testing.T) {
+func Test_checkKeyFormat(t *testing.T) {
 	tests := []struct {
 		name    string
-		cfg     Config
-		want    []string
-		want1   string
-		wantErr bool
+		keyName string
+		want    bool
 	}{
-		{"userAndPassword", Config{"dummyIPAPath", "dummyPkgPath", "iTunesUser", "password", "", "", ""}, []string{"-u", "iTunesUser", "-p", "password"}, "password", false},
-		{"userAndAppPassword1", Config{"dummyIPAPath", "dummyPkgPath", "iTunesUser", "", "appPassword", "", ""}, []string{"-u", "iTunesUser", "-p", "appPassword"}, "appPassword", false},
-		{"userAndAppPassword2", Config{"dummyIPAPath", "dummyPkgPath", "iTunesUser", "password", "appPassword", "", ""}, []string{"-u", "iTunesUser", "-p", "appPassword"}, "appPassword", false},
-		{"apiKeyAndIssuerID", Config{"dummyIPAPath", "dummyPkgPath", "", "", "", "APIKey", "IssuerID"}, []string{"--apiKey", "APIKey", "--apiIssuer", "IssuerID"}, "", false},
-		{"allProvided", Config{"dummyIPAPath", "dummyPkgPath", "iTunesUser", "password", "appPassword", "APIKey", "IssuerID"}, []string{"-u", "iTunesUser", "-p", "appPassword"}, "appPassword", false},
-		{"missingPassword", Config{"dummyIPAPath", "dummyPkgPath", "iTunesUser", "", "", "", ""}, []string{}, "", true},
-		{"missingUser", Config{"dummyIPAPath", "dummyPkgPath", "", "password", "appPassword", "", ""}, []string{}, "", true},
-		{"missingAPIKey", Config{"dummyIPAPath", "dummyPkgPath", "", "", "", "", "IssuerID"}, []string{}, "", true},
-		{"missingAPIIssuer", Config{"dummyIPAPath", "dummyPkgPath", "", "", "", "APIKey", ""}, []string{}, "", true},
-		{"allMissing", Config{"dummyIPAPath", "dummyPkgPath", "", "", "", "", ""}, []string{}, "", true},
+		{"validKeyFormat1", "AuthKey_1234.p8", true},
+		{"validKeyFormat2", "AuthKey_BITISE.p8", true},
+		{"invalidKeyFormat1", "AuthKey_.p8", false},
+		{"invalidKeyFormat2", "BITISE.p8", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := getAuthOptions(tt.cfg)
+			if got := checkKeyFormat(tt.keyName); got != tt.want {
+				t.Errorf("checkKeyFormat() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_getDstName(t *testing.T) {
+	tests := []struct {
+		name    string
+		keyName string
+		want    string
+		wantErr bool
+	}{
+		{"keyNameTestValid1", "sample", "AuthKey_sample.p8", false},
+		{"keyNameTestValid2", "1234", "AuthKey_1234.p8", false},
+		{"keyNameTestInvalid1", "", "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getDstName(tt.keyName)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("getAuthOptions() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("getDstName() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getAuthOptions() got = %v, want %v", got, tt.want)
+			if got != tt.want {
+				t.Errorf("getDstName() = %v, want %v", got, tt.want)
 			}
-			if got1 != tt.want1 {
-				t.Errorf("getAuthOptions() got1 = %v, want %v", got1, tt.want1)
+		})
+	}
+}
+
+func Test_getDstPath(t *testing.T) {
+	tests := []struct {
+		name    string
+		keyPath string
+		want    string
+		wantErr bool
+	}{
+		{"keyPathTestValid1", "path/to/my/sample.p8", "private_keys/AuthKey_sample.p8", false},
+		{"keyPathTestValid2", "path/to/my/1234.p8", "private_keys/AuthKey_1234.p8", false},
+		{"keyPathTestValidNoExtension", "path/to/my/BITRISE", "private_keys/AuthKey_BITRISE.p8", false},
+		{"keyPathTestInvalid1", "", "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getDstPath(tt.keyPath)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getDstPath() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("getDstPath() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_getAPIKeyFromFileName(t *testing.T) {
+	tests := []struct {
+		name    string
+		keyName string
+		want    string
+		wantErr bool
+	}{
+		{"apiKeyTestValid1", "path/to/my/AuthKey_sample.p8", "sample", false},
+		{"apiKeyTestValid2", "path/to/my/AuthKey_1234.p8", "1234", false},
+		{"apiKeyTestValid2", "path/to/my/1234.p8", "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getAPIKeyFromFileName(tt.keyName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getAPIKeyFromFileName() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("getAPIKeyFromFileName() = %v, want %v", got, tt.want)
 			}
 		})
 	}

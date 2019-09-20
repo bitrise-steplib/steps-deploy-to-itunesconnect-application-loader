@@ -3,7 +3,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:945dec33916c7be2b166858c46488ab937dc99bacb4cc515a107fd8e89bbf7d8"
+  digest = "1:45a78fadfcaecc01de9b5fa2109282fcef8dd1a69898baa85af611f7010dac0c"
   name = "github.com/bitrise-io/go-utils"
   packages = [
     "colorstring",
@@ -16,7 +16,7 @@
     "sliceutil",
   ]
   pruneopts = "UT"
-  revision = "d1de0dbcb811588e61362aff67bb700b93c13c17"
+  revision = "ad86bf775472ce1934affb9d3cb7d5ea3dffd16f"
 
 [[projects]]
   branch = "master"
@@ -31,22 +31,22 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2c6e7ab0e44a221244ca41c36e980dc2055d522f40cfd8b2494cd49ea3022f5b"
+  digest = "1:96d5125fd06d92e77d44cce8c8f20970edb4c7f0ce34750b445d38cf777cdf95"
   name = "github.com/bitrise-tools/go-steputils"
   packages = [
     "input",
     "stepconf",
   ]
   pruneopts = "UT"
-  revision = "d4d9e08cc4347e8784bb18419fcdceb932e17019"
+  revision = "f540824d77dfd382ce84fd0ee0a9da2fba1cce0a"
 
 [[projects]]
-  digest = "1:a2c1d0e43bd3baaa071d1b9ed72c27d78169b2b269f71c105ac4ba34b1be4a39"
+  digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   pruneopts = "UT"
-  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
-  version = "v1.1.0"
+  revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
+  version = "v1.1.1"
 
 [[projects]]
   digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
@@ -57,15 +57,23 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:c40d65817cdd41fac9aa7af8bed56927bb2d6d47e4fea566a74880f5c2b1c41e"
+  digest = "1:99d32780e5238c2621fff621123997c3e3cca96db8be13179013aea77dfab551"
   name = "github.com/stretchr/testify"
   packages = [
     "assert",
     "require",
   ]
   pruneopts = "UT"
-  revision = "f35b8ab0b5a2cef36673838d662e249dd9c94686"
-  version = "v1.2.2"
+  revision = "221dbe5ed46703ee255b1da0dec05086f5035f62"
+  version = "v1.4.0"
+
+[[projects]]
+  digest = "1:4d2e5a73dc1500038e504a8d78b986630e3626dc027bc030ba5c75da257cdb96"
+  name = "gopkg.in/yaml.v2"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "51d6538a90f86fe93ac480b35f37b2be17fef232"
+  version = "v2.2.2"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -73,7 +81,9 @@
   input-imports = [
     "github.com/bitrise-io/go-utils/command",
     "github.com/bitrise-io/go-utils/log",
+    "github.com/bitrise-io/go-utils/pathutil",
     "github.com/bitrise-io/go-utils/sliceutil",
+    "github.com/bitrise-io/go-xcode/models",
     "github.com/bitrise-io/go-xcode/utility",
     "github.com/bitrise-tools/go-steputils/input",
     "github.com/bitrise-tools/go-steputils/stepconf",

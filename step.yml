@@ -71,11 +71,13 @@ inputs:
     description: |-
       Path to your PKG file to be deployed.
       **NOTE:** This input or `IPA path` is required.
-- api_key: ""
+- api_key_path: ""
   opts:
     title: "API Key"
     description: |-
       Required for JWT authentication while using validation, upload, and notarization.
+      For remote keys you can provide any download location (ex: https://URL/TO/key.p8).
+      For local keys provide file path url. (ex: file://PATH/TO/key.p8).
       This option will search the following directories in sequence for a private key file
       with the name of 'AuthKey_<api_key>.p8': './private_keys', '~/private_keys', '~/.private_keys',
       and '~/.appstoreconnect/private_keys'.
@@ -83,6 +85,7 @@ inputs:
       One of the paris should be provided.
       **NOTE:** Only available from XCode 11.0 and above.
     is_required: false
+    is_sensitive: true
 - api_issuer: ""
   opts:
     title: "Issuer ID"
