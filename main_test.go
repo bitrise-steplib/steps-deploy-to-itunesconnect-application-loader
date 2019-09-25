@@ -49,13 +49,13 @@ func Test_getDstName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getDstName(tt.keyName)
+			got, err := keyNameForAltool(tt.keyName)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("getDstName() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("keyNameForAltool() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("getDstName() = %v, want %v", got, tt.want)
+				t.Errorf("keyNameForAltool() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -75,13 +75,13 @@ func Test_getDstPath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getDstPath(tt.keyPath)
+			got, err := keyPathForAltool(tt.keyPath)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("getDstPath() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("keyPathForAltool() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("getDstPath() = %v, want %v", got, tt.want)
+				t.Errorf("keyPathForAltool() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -100,13 +100,13 @@ func Test_getAPIKeyFromFileName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getAPIKeyFromFileName(tt.keyName)
+			got, err := APIKeyFromFileName(tt.keyName)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("getAPIKeyFromFileName() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("APIKeyFromFileName() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("getAPIKeyFromFileName() = %v, want %v", got, tt.want)
+				t.Errorf("APIKeyFromFileName() = %v, want %v", got, tt.want)
 			}
 		})
 	}

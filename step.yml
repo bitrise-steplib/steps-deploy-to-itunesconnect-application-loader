@@ -41,8 +41,8 @@ inputs:
     title: "Password"
     description: |- 
       Password for the specified Apple ID.
-      **NOTE:** There are two methods available for authentication: user name with password, and apiKey with apiIssuer.
-      One of the paris should be provided.
+      **NOTE:** There are two methods available for authentication: user name with password, and API key with API issuer.
+      One of the pairs should be provided.
       **NOTE:** For user name with password authentication Password or Application specific password is required.
     is_required: false
     is_sensitive: true
@@ -54,8 +54,8 @@ inputs:
       **NOTE:** Application specific passwords can be created on the
       [AppleID Website](https://appleid.apple.com). It can be used to
       surpass Two Factor Authentication.
-      **NOTE:** There are two methods available for authentication: user name with password, and apiKey with apiIssuer.
-      One of the paris should be provided.
+      **NOTE:** There are two methods available for authentication: user name with password, and API key with API issuer.                                                                                                   One of the paris should be provided.
+      One of the pairs should be provided.
       **NOTE:** For user name with password authentication Password or Application specific password is required.
     is_required: false
     is_sensitive: true
@@ -78,11 +78,8 @@ inputs:
       Required for JWT authentication while using validation, upload, and notarization.
       For remote keys you can provide any download location (ex: https://URL/TO/key.p8).
       For local keys provide file path url. (ex: file://PATH/TO/key.p8).
-      This option will search the following directories in sequence for a private key file
-      with the name of 'AuthKey_<api_key>.p8': './private_keys', '~/private_keys', '~/.private_keys',
-      and '~/.appstoreconnect/private_keys'.
-      **NOTE:** There are two methods available for authentication: user name with password, and apiKey with apiIssuer.
-      One of the paris should be provided.
+      **NOTE:** There are two methods available for authentication: user name with password, and API key with API issuer.
+      One of the pairs should be provided.
       **NOTE:** Only available from XCode 11.0 and above.
     is_required: false
     is_sensitive: true
@@ -91,8 +88,8 @@ inputs:
     title: "Issuer ID"
     description: |-
       Issuer ID. Required if --apiKey is specified.
-      **NOTE:** There are two methods available for authentication: user name with password, and apiKey with apiIssuer.
-      One of the paris should be provided.
+      **NOTE:** There are two methods available for authentication: user name with password, and API key with API issuer.
+      One of the pairs should be provided.
       **NOTE:** Only available from XCode 11.0 and above.
     is_required: false
 
