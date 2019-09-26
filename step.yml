@@ -27,46 +27,46 @@ toolkit:
     package_name: github.com/bitrise-steplib/steps-deploy-to-itunesconnect-application-loader
 
 inputs:
-- itunescon_user: ""
-  opts:
-    title: "Apple ID"
-    description: Login Apple ID for the iTunes Connect site.
-    is_required: true
-    is_sensitive: true
-- password: ""
-  opts:
-    title: "Password"
-    description: |-
-      Password for the specified Apple ID.
-      **NOTE:** Password or Application specific password is required.
-    is_required: false
-    is_sensitive: true
-- app_password: ""
-  opts:
-    title: "Application Specific Password"
-    description: |-
-      An Application specific password for the Apple ID.
-      **NOTE:** Application specific passwords can be created on the
-      [AppleID Website](https://appleid.apple.com). It can be used to
-      surpass Two Factor Authentication.
-      **NOTE:** Password or Application specific password is required.
-    is_required: false
-    is_sensitive: true
-- ipa_path: "$BITRISE_IPA_PATH"
-  opts:
-    title: "IPA path"
-    description: |-
-      Path to your IPA file to be deployed.
-      **NOTE:** This input or `PKG path` is required.
-- pkg_path: "$BITRISE_PKG_PATH"
-  opts:
-    title: "PKG path"
-    description: |-
-      Path to your PKG file to be deployed.
-      **NOTE:** This input or `IPA path` is required.
-- asc_provider: ""
-  opts:
-    title: "App Store Connect Provider"
-    description: |-
-      The Team ID the app should be uploaded under.
-      **NOTE:** If you have an account with multiple teams available, this input is required.
+  - itunescon_user: ""
+    opts:
+      title: "Apple ID"
+      description: Login Apple ID for the iTunes Connect site.
+      is_required: true
+      is_sensitive: true
+  - password: ""
+    opts:
+      title: "Password"
+      description: |-
+        Password for the specified Apple ID.
+        **NOTE:** Password or Application specific password is required.
+      is_required: false
+      is_sensitive: true
+  - app_password: ""
+    opts:
+      title: "Application Specific Password"
+      description: |-
+        An Application specific password for the Apple ID.
+        **NOTE:** Application specific passwords can be created on the
+        [AppleID Website](https://appleid.apple.com). It can be used to
+        surpass Two Factor Authentication.
+        **NOTE:** Password or Application specific password is required.
+      is_required: false
+      is_sensitive: true
+  - ipa_path: "$BITRISE_IPA_PATH"
+    opts:
+      title: "IPA path"
+      description: |-
+        Path to your IPA file to be deployed.
+        **NOTE:** This input or `PKG path` is required.
+  - pkg_path: "$BITRISE_PKG_PATH"
+    opts:
+      title: "PKG path"
+      description: |-
+        Path to your PKG file to be deployed.
+        **NOTE:** This input or `IPA path` is required.
+  - asc_provider: ""
+    opts:
+      title: "App Store Connect Provider"
+      description: |-
+        The Team ID (``--asc-provider`) this build should be uploaded against.
+        **NOTE:** If you have an account with multiple teams available, this input is required.

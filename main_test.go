@@ -15,3 +15,11 @@ func Test_xcodePath(t *testing.T) {
 		require.True(t, sliceutil.IsStringInSlice(got, []string{"/Applications/Xcode.app", "/Applications/Xcode-beta.app"}))
 	}
 }
+
+func Test_altoolCommandNoProvider(t *testing.T) {
+	t.Log("altoolCommand test - no provider")
+	{
+		got := altoolCommand("altoolPath", "ipapath.ipa", "ascUser", "ascPassword", "")
+		require.True(t, got.PrintableCommandArgs() == `"altoolPath --upload-app" "-f" "ipapath.ipa" "-u" "ascUser" "-p" "ascPassword"`)
+	}
+}
