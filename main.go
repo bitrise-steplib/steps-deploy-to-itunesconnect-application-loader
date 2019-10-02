@@ -69,19 +69,62 @@ func (cfg Config) validateEnvs() error {
 	return nil
 }
 
+func copyOrDownloadFile(u *url.URL, pth string) error {
+	certFile, err := os.Create(pth)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := certFile.Close(); err != nil {
+			log.Errorf("Failed to close file, error: %s", err)
+		}
+	}()
+
+	// if file -> download
+	if u.Scheme == "file" {
+		b, err := ioutil.ReadFile(u.Path)
+		if err != nil {
+			return err
+		}
+		_, err = certFile.Write(b)
+		return err
+	}
+
+	// otherwise download
+	f, err := http.Get(u.String())
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := f.Body.Close(); err != nil {
+			log.Errorf("Failed to close file, error: %s", err)
+		}
+	}()
+
+	_, err = io.Copy(certFile, f.Body)
+	return err
+}
+
+func getKeyID(u *url.URL) string {
+	var keyID = "Bitrise" // as default if no ID found in file name
+
+	// get the ID of the key from the file
+	if matches := regexp.MustCompile(`AuthKey_(.+)\.p8`).FindStringSubmatch(filepath.Base(u.Path)); len(matches) == 2 {
+		keyID = matches[1]
+	}
+
+	return keyID
+}
+
 // prepares key and returns the ID the tool need to use
 func prepareAPIKey(apiKeyPath string) (string, error) {
-	// input should accept url and filepath
-	// 4 location existing, check the files there first
-	// if there is a file on any of the 4 locations use that
-	// if ther eis no that file found then move it to one of the locations
-	// if the filename is not conventional for the tool then create a new unique one
-
 	// see these in the altool's man page
-	var (
-		keyPaths = []string{filepath.Join(os.Getenv("HOME"), ".appstoreconnect/private_keys"), "./private_keys", filepath.Join(os.Getenv("HOME"), "private_keys"), filepath.Join(os.Getenv("HOME"), ".private_keys")}
-		keyID    = "Bitrise" // as default if no ID found in file name
-	)
+	var keyPaths = []string{
+		filepath.Join(os.Getenv("HOME"), ".appstoreconnect/private_keys"),
+		filepath.Join(os.Getenv("HOME"), ".private_keys"),
+		filepath.Join(os.Getenv("HOME"), "private_keys"),
+		"./private_keys",
+	}
 
 	// parse string to url
 	fileURL, err := url.Parse(apiKeyPath)
@@ -89,10 +132,7 @@ func prepareAPIKey(apiKeyPath string) (string, error) {
 		return "", err
 	}
 
-	// get the ID of the key from the file
-	if matches := regexp.MustCompile(`AuthKey_(.+)\.p8`).FindStringSubmatch(filepath.Base(fileURL.Path)); len(matches) == 2 {
-		keyID = matches[1]
-	}
+	keyID := getKeyID(fileURL)
 
 	certName := fmt.Sprintf("AuthKey_%s.p8", keyID)
 
@@ -107,41 +147,8 @@ func prepareAPIKey(apiKeyPath string) (string, error) {
 		}
 	}
 
-	// cert file not found on any of the locations, so copy or download it
-
-	// create cert file on the first location
-	certFile, err := os.Create(filepath.Join(keyPaths[0], certName))
-	if err != nil {
-		return "", err
-	}
-	defer func() {
-		if err := certFile.Close(); err != nil {
-			log.Errorf("Failed to close file, error: %s", err)
-		}
-	}()
-
-	// if file -> download
-	if fileURL.Scheme == "file" {
-		b, err := ioutil.ReadFile(fileURL.Path)
-		if err != nil {
-			return "", err
-		}
-		_, err = certFile.Write(b)
-		return keyID, err
-	}
-
-	// otherwise download
-	f, err := http.Get(apiKeyPath)
-	if err != nil {
-		return "", err
-	}
-	defer func() {
-		if err := f.Body.Close(); err != nil {
-			log.Errorf("Failed to close file, error: %s", err)
-		}
-	}()
-
-	if _, err := io.Copy(certFile, f.Body); err != nil {
+	// cert file not found on any of the locations, so copy or download it then return it's ID
+	if err := copyOrDownloadFile(fileURL, filepath.Join(keyPaths[0], certName)); err != nil {
 		return "", err
 	}
 
