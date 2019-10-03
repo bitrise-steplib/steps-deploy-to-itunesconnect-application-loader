@@ -89,7 +89,7 @@ func copyOrDownloadFile(u *url.URL, pth string) error {
 		}
 	}()
 
-	// if file -> download
+	// if file -> copy
 	if u.Scheme == "file" {
 		b, err := ioutil.ReadFile(u.Path)
 		if err != nil {
