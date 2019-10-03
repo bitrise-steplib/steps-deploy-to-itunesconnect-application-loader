@@ -52,7 +52,9 @@ func Test_getKeyID(t *testing.T) {
 
 func Test_copyOrDownloadFile(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "the only valid content")
+		if _, err := fmt.Fprint(w, "the only valid content"); err != nil {
+			t.Fatal(err)
+		}
 	}))
 	defer ts.Close()
 

@@ -213,19 +213,18 @@ func main() {
 
 	authParams := []string{"-u", cfg.ItunesConnectUser, "-p", password}
 
-	if cfg.APIKeyPath != "" {
-		apiKeyID, err := prepareAPIKey(cfg.APIKeyPath)
-		if err != nil {
-			failf("Failed to prepare certificate for authentication, error: %s", err)
-		}
-		authParams = []string{"--apiKey", apiKeyID, "--apiIssuer", cfg.APIIssuer}
-	}
-
 	var cmd *command.Model
 	if xcodeVersion.MajorVersion < 11 {
 		altool := filepath.Join(xcpath, "/Contents/Applications/Application Loader.app/Contents/Frameworks/ITunesSoftwareService.framework/Support/altool")
 		cmd = command.New(altool, append([]string{"--upload-app", "-f", filePth}, authParams...)...)
 	} else {
+		if cfg.APIKeyPath != "" {
+			apiKeyID, err := prepareAPIKey(cfg.APIKeyPath)
+			if err != nil {
+				failf("Failed to prepare certificate for authentication, error: %s", err)
+			}
+			authParams = []string{"--apiKey", apiKeyID, "--apiIssuer", cfg.APIIssuer}
+		}
 		cmd = command.New("xcrun", append([]string{"altool", "--upload-app", "-f", filePth}, authParams...)...)
 	}
 	cmd.SetStdout(os.Stdout)
