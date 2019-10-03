@@ -19,6 +19,7 @@ project_type_tags:
   - cordova
   - ionic
   - react-native
+  - flutter
 type_tags:
   - deploy
 
@@ -31,7 +32,6 @@ inputs:
   opts:
     title: "Apple ID"
     description: Login Apple ID for the iTunes Connect site.
-    is_required: true
     is_sensitive: true
 - password: ""
   opts:
@@ -39,7 +39,6 @@ inputs:
     description: |- 
       Password for the specified Apple ID.
       **NOTE:** Password or Application specific password is required when itunescon_user is specified.
-    is_required: false
     is_sensitive: true
 - app_password: ""
   opts:
@@ -50,7 +49,6 @@ inputs:
       [AppleID Website](https://appleid.apple.com). It can be used to
       surpass Two Factor Authentication.
       **NOTE:** Password or Application specific password is required when itunescon_user is specified.
-    is_required: false
     is_sensitive: true
 - ipa_path: "$BITRISE_IPA_PATH"
   opts:
@@ -75,7 +73,6 @@ inputs:
       For example: `$BITRISEIO_MYKEY_URL`
 
       **NOTE:** Only available from XCode 11.0 and above.
-    is_required: false
 - api_issuer: ""
   opts:
     title: "Issuer ID"
@@ -83,4 +80,3 @@ inputs:
       Issuer ID. Required if api_key_path is specified.
 
       **NOTE:** Only available from XCode 11.0 and above.
-    is_required: false
