@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -227,12 +228,16 @@ func main() {
 		}
 		cmd = command.New("xcrun", append([]string{"altool", "--upload-app", "-f", filePth}, authParams...)...)
 	}
-	cmd.SetStdout(os.Stdout)
+	var outb bytes.Buffer
+	cmd.SetStdout(&outb)
 	cmd.SetStderr(os.Stderr)
 
 	fileName := filepath.Base(filePth)
 	commandStr := cmd.PrintableCommandArgs()
-	commandStr = strings.Replace(commandStr, password, "[REDACTED]", -1)
+
+	if len(password) > 0 {
+		commandStr = strings.Replace(commandStr, password, "[REDACTED]", -1)
+	}
 
 	log.Infof("Uploading - %s ...", fileName)
 	log.Printf("$ %s", commandStr)
@@ -241,7 +246,14 @@ func main() {
 		failf("Uploading IPA failed: %s", err)
 	}
 
-	fmt.Println()
+	out := outb.String()
+
+	if matches := regexp.MustCompile(`(?i)Generated JWT: (.*)`).FindStringSubmatch(out); len(matches) == 2 {
+		out = strings.Replace(out, matches[1], "[REDACTED]", -1)
+	}
+
+	fmt.Println(out)
+
 	log.Donef("IPA uploaded")
 }
 

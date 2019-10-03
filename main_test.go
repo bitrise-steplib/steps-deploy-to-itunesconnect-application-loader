@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/bitrise-io/go-utils/pathutil"
@@ -94,6 +96,24 @@ func Test_copyOrDownloadFile(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_regexTest(t *testing.T) {
+	const (
+		samplelog = `Generated JWT: eyJhbGciOiJFUzI1NiIsImtpZCI6IjdBUDgzS1Y1NEIiLCJ0eXAiOiJKV1QifQ.eyJleHAiOjE1NzAxMDA4MzcsImlzcyI6IjY5YTZkZTdiLTczMjUtNDdlMy1lMDUzLTViOGM3YzExYTRkMSIsImF1ZCI6ImFwcHN0b3JlY29ubmVjdC12MSIsImlhdCI6MTU3MDA5OTYzN30.r9c7XKA4sUv-pmN55IgzxzcVmrO7RFl2VnfK9EpD7KrTr3wQQrAzlgskynYX7Eg8JeNZitnkrPpJNuOU-17d1A
+No errors uploading '/Users/vagrant/deploy/Application Loader Test.ipa'
+`
+		expectation = `Generated JWT: [REDACTED]
+No errors uploading '/Users/vagrant/deploy/Application Loader Test.ipa'
+`
+	)
+
+	if matches := regexp.MustCompile(`(?i)Generated JWT: (.*)`).FindStringSubmatch(samplelog); len(matches) == 2 {
+		if strings.Replace(samplelog, matches[1], "[REDACTED]", -1) != expectation {
+			t.Fatal(expectation, matches[0], strings.Replace(samplelog, matches[1], "[REDACTED]", -1))
+		}
+	}
+
 }
 
 func Test_getKeyPath(t *testing.T) {
