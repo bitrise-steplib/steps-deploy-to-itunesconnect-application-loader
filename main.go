@@ -38,16 +38,21 @@ func (cfg Config) validateEnvs() error {
 		}
 	}
 
-	switch isJWTAuthType, isAppleIDAuthType := (cfg.APIKeyPath != "" || cfg.APIIssuer != ""), (cfg.AppPassword != "" || cfg.Password != "" || cfg.ItunesConnectUser != ""); {
+	var (
+		isJWTAuthType     = (cfg.APIKeyPath != "" || cfg.APIIssuer != "")
+		isAppleIDAuthType = (cfg.AppPassword != "" || cfg.Password != "" || cfg.ItunesConnectUser != "")
+	)
+
+	switch {
 
 	case isAppleIDAuthType == isJWTAuthType:
 
-		return fmt.Errorf("one type of authentication required, either provide Apple ID with password/app password or API key with issuer")
+		return fmt.Errorf("one type of authentication required, either provide itunescon_user with password/app_password or api_key_path with api_issuer")
 
 	case isAppleIDAuthType:
 
 		if err := input.ValidateIfNotEmpty(string(cfg.ItunesConnectUser)); err != nil {
-			return fmt.Errorf("no Apple ID provided")
+			return fmt.Errorf("no itunescon_user provided")
 		}
 		if err := input.ValidateIfNotEmpty(string(cfg.Password)); err != nil {
 			if err := input.ValidateIfNotEmpty(string(cfg.AppPassword)); err != nil {
@@ -58,10 +63,10 @@ func (cfg Config) validateEnvs() error {
 	case isJWTAuthType:
 
 		if err := input.ValidateIfNotEmpty(string(cfg.APIIssuer)); err != nil {
-			return fmt.Errorf("no API Issuer provided")
+			return fmt.Errorf("no api_issuer provided")
 		}
 		if err := input.ValidateIfNotEmpty(string(cfg.APIKeyPath)); err != nil {
-			return fmt.Errorf("no API Key path provided")
+			return fmt.Errorf("no api_key_path provided")
 		}
 
 	}
@@ -70,6 +75,10 @@ func (cfg Config) validateEnvs() error {
 }
 
 func copyOrDownloadFile(u *url.URL, pth string) error {
+	if err := os.MkdirAll(filepath.Dir(pth), 0777); err != nil {
+		return err
+	}
+
 	certFile, err := os.Create(pth)
 	if err != nil {
 		return err
@@ -116,6 +125,23 @@ func getKeyID(u *url.URL) string {
 	return keyID
 }
 
+func getKeyPath(keyID string, keyPaths []string) (string, error) {
+	certName := fmt.Sprintf("AuthKey_%s.p8", keyID)
+
+	for _, path := range keyPaths {
+		certPath := filepath.Join(path, certName)
+
+		switch exists, err := pathutil.IsPathExists(certPath); {
+		case err != nil:
+			return "", err
+		case exists:
+			return certPath, os.ErrExist
+		}
+	}
+
+	return filepath.Join(keyPaths[0], certName), nil
+}
+
 // prepares key and returns the ID the tool need to use
 func prepareAPIKey(apiKeyPath string) (string, error) {
 	// see these in the altool's man page
@@ -126,7 +152,6 @@ func prepareAPIKey(apiKeyPath string) (string, error) {
 		"./private_keys",
 	}
 
-	// parse string to url
 	fileURL, err := url.Parse(apiKeyPath)
 	if err != nil {
 		return "", err
@@ -134,21 +159,16 @@ func prepareAPIKey(apiKeyPath string) (string, error) {
 
 	keyID := getKeyID(fileURL)
 
-	certName := fmt.Sprintf("AuthKey_%s.p8", keyID)
-
-	// if certName already exists on any of the following locations then return that's ID here
-	for _, path := range keyPaths {
-		exists, err := pathutil.IsPathExists(filepath.Join(path, certName))
-		if err != nil {
-			return "", err
-		}
-		if exists {
+	keyPath, err := getKeyPath(keyID, keyPaths)
+	if err != nil {
+		if err == os.ErrExist {
 			return keyID, nil
 		}
+		return "", err
 	}
 
 	// cert file not found on any of the locations, so copy or download it then return it's ID
-	if err := copyOrDownloadFile(fileURL, filepath.Join(keyPaths[0], certName)); err != nil {
+	if err := copyOrDownloadFile(fileURL, keyPath); err != nil {
 		return "", err
 	}
 
