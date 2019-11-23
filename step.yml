@@ -86,3 +86,4 @@ inputs:
     description: |-
       The Team ID (``--asc-provider`) this build should be uploaded against.
       **NOTE:** If you have an account with multiple teams available, this input is required.
+    is_sensitive: true
