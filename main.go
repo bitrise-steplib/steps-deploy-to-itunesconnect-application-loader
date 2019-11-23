@@ -1,13 +1,22 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
+
+	"github.com/bitrise-io/go-utils/pathutil"
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-xcode/utility"
 	"github.com/bitrise-tools/go-steputils/input"
 	"github.com/bitrise-tools/go-steputils/stepconf"
 )
@@ -16,10 +25,11 @@ import (
 type Config struct {
 	IpaPath           string          `env:"ipa_path"`
 	PkgPath           string          `env:"pkg_path"`
-	ItunesConnectUser string          `env:"itunescon_user,required"`
+	ItunesConnectUser string          `env:"itunescon_user"`
 	Password          stepconf.Secret `env:"password"`
 	AppPassword       stepconf.Secret `env:"app_password"`
-	ASCProvider       string          `env:"asc_provider"`
+	APIKeyPath        string          `env:"api_key_path"`
+	APIIssuer         string          `env:"api_issuer"`
 }
 
 func (cfg Config) validateEnvs() error {
@@ -29,13 +39,141 @@ func (cfg Config) validateEnvs() error {
 		}
 	}
 
-	if err := input.ValidateIfNotEmpty(string(cfg.Password)); err != nil {
-		if err := input.ValidateIfNotEmpty(string(cfg.AppPassword)); err != nil {
-			return fmt.Errorf("neither password nor app_password is provided")
+	var (
+		isJWTAuthType     = (cfg.APIKeyPath != "" || cfg.APIIssuer != "")
+		isAppleIDAuthType = (cfg.AppPassword != "" || cfg.Password != "" || cfg.ItunesConnectUser != "")
+	)
+
+	switch {
+
+	case isAppleIDAuthType == isJWTAuthType:
+
+		return fmt.Errorf("one type of authentication required, either provide itunescon_user with password/app_password or api_key_path with api_issuer")
+
+	case isAppleIDAuthType:
+
+		if err := input.ValidateIfNotEmpty(string(cfg.ItunesConnectUser)); err != nil {
+			return fmt.Errorf("no itunescon_user provided")
 		}
+		if err := input.ValidateIfNotEmpty(string(cfg.Password)); err != nil {
+			if err := input.ValidateIfNotEmpty(string(cfg.AppPassword)); err != nil {
+				return fmt.Errorf("neither password nor app_password is provided")
+			}
+		}
+
+	case isJWTAuthType:
+
+		if err := input.ValidateIfNotEmpty(string(cfg.APIIssuer)); err != nil {
+			return fmt.Errorf("no api_issuer provided")
+		}
+		if err := input.ValidateIfNotEmpty(string(cfg.APIKeyPath)); err != nil {
+			return fmt.Errorf("no api_key_path provided")
+		}
+
 	}
 
 	return nil
+}
+
+func copyOrDownloadFile(u *url.URL, pth string) error {
+	if err := os.MkdirAll(filepath.Dir(pth), 0777); err != nil {
+		return err
+	}
+
+	certFile, err := os.Create(pth)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := certFile.Close(); err != nil {
+			log.Errorf("Failed to close file, error: %s", err)
+		}
+	}()
+
+	// if file -> copy
+	if u.Scheme == "file" {
+		b, err := ioutil.ReadFile(u.Path)
+		if err != nil {
+			return err
+		}
+		_, err = certFile.Write(b)
+		return err
+	}
+
+	// otherwise download
+	f, err := http.Get(u.String())
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := f.Body.Close(); err != nil {
+			log.Errorf("Failed to close file, error: %s", err)
+		}
+	}()
+
+	_, err = io.Copy(certFile, f.Body)
+	return err
+}
+
+func getKeyID(u *url.URL) string {
+	var keyID = "Bitrise" // as default if no ID found in file name
+
+	// get the ID of the key from the file
+	if matches := regexp.MustCompile(`AuthKey_(.+)\.p8`).FindStringSubmatch(filepath.Base(u.Path)); len(matches) == 2 {
+		keyID = matches[1]
+	}
+
+	return keyID
+}
+
+func getKeyPath(keyID string, keyPaths []string) (string, error) {
+	certName := fmt.Sprintf("AuthKey_%s.p8", keyID)
+
+	for _, path := range keyPaths {
+		certPath := filepath.Join(path, certName)
+
+		switch exists, err := pathutil.IsPathExists(certPath); {
+		case err != nil:
+			return "", err
+		case exists:
+			return certPath, os.ErrExist
+		}
+	}
+
+	return filepath.Join(keyPaths[0], certName), nil
+}
+
+// prepares key and returns the ID the tool need to use
+func prepareAPIKey(apiKeyPath string) (string, error) {
+	// see these in the altool's man page
+	var keyPaths = []string{
+		filepath.Join(os.Getenv("HOME"), ".appstoreconnect/private_keys"),
+		filepath.Join(os.Getenv("HOME"), ".private_keys"),
+		filepath.Join(os.Getenv("HOME"), "private_keys"),
+		"./private_keys",
+	}
+
+	fileURL, err := url.Parse(apiKeyPath)
+	if err != nil {
+		return "", err
+	}
+
+	keyID := getKeyID(fileURL)
+
+	keyPath, err := getKeyPath(keyID, keyPaths)
+	if err != nil {
+		if err == os.ErrExist {
+			return keyID, nil
+		}
+		return "", err
+	}
+
+	// cert file not found on any of the locations, so copy or download it then return it's ID
+	if err := copyOrDownloadFile(fileURL, keyPath); err != nil {
+		return "", err
+	}
+
+	return keyID, nil
 }
 
 func main() {
@@ -69,14 +207,37 @@ func main() {
 	log.Printf("Xcode path: %s", xcpath)
 	fmt.Println()
 
-	altool := filepath.Join(xcpath, "/Contents/Applications/Application Loader.app/Contents/Frameworks/ITunesSoftwareService.framework/Support/altool")
-	cmd := altoolCommand(altool, filePth, cfg.ItunesConnectUser, password, cfg.ASCProvider)
-	cmd.SetStdout(os.Stdout)
+	xcodeVersion, err := utility.GetXcodeVersion()
+	if err != nil {
+		failf("Failed to determine Xcode version, error: %s", err)
+	}
+
+	authParams := []string{"-u", cfg.ItunesConnectUser, "-p", password}
+
+	var cmd *command.Model
+	if xcodeVersion.MajorVersion < 11 {
+		altool := filepath.Join(xcpath, "/Contents/Applications/Application Loader.app/Contents/Frameworks/ITunesSoftwareService.framework/Support/altool")
+		cmd = command.New(altool, append([]string{"--upload-app", "-f", filePth}, authParams...)...)
+	} else {
+		if cfg.APIKeyPath != "" {
+			apiKeyID, err := prepareAPIKey(cfg.APIKeyPath)
+			if err != nil {
+				failf("Failed to prepare certificate for authentication, error: %s", err)
+			}
+			authParams = []string{"--apiKey", apiKeyID, "--apiIssuer", cfg.APIIssuer}
+		}
+		cmd = command.New("xcrun", append([]string{"altool", "--upload-app", "-f", filePth}, authParams...)...)
+	}
+	var outb bytes.Buffer
+	cmd.SetStdout(&outb)
 	cmd.SetStderr(os.Stderr)
 
 	fileName := filepath.Base(filePth)
 	commandStr := cmd.PrintableCommandArgs()
-	commandStr = strings.Replace(commandStr, password, "[REDACTED]", -1)
+
+	if len(password) > 0 {
+		commandStr = strings.Replace(commandStr, password, "[REDACTED]", -1)
+	}
 
 	log.Infof("Uploading - %s ...", fileName)
 	log.Printf("$ %s", commandStr)
@@ -85,28 +246,15 @@ func main() {
 		failf("Uploading IPA failed: %s", err)
 	}
 
-	fmt.Println()
-	log.Donef("IPA uploaded")
-}
+	out := outb.String()
 
-/*
-	Returns a command.Model object, that when executed will run altool & upload the given ipa file.
-
-	Note: Provide ascProvider as "" to not apply --asc-provider.
-
-	Parameters:
-	- altoolPath: The path to the altool executable.
-	- ipaPath: The path to the .ipa file that'll be uploaded.
-	- ascUser: The user's App Store Connect username.
-	- ascPassword: The user's App Store Connect password.
-	- ascProvider: The team ID that the .ipa should be uploaded against. Used to specify a team where multiple are available.
- */
-func altoolCommand(altoolPath string, ipaPath string, ascUser string, ascPassword string, ascProvider string) *command.Model {
-	if ascProvider == "" {
-		return command.New(altoolPath, "--upload-app", "-f", ipaPath, "-u", ascUser, "-p", ascPassword)
-	} else {
-		return command.New(altoolPath, "--upload-app", "-f", ipaPath, "-u", ascUser, "-p", ascPassword, "--asc-provider", ascProvider)
+	if matches := regexp.MustCompile(`(?i)Generated JWT: (.*)`).FindStringSubmatch(out); len(matches) == 2 {
+		out = strings.Replace(out, matches[1], "[REDACTED]", -1)
 	}
+
+	fmt.Println(out)
+
+	log.Donef("IPA uploaded")
 }
 
 func xcodePath() (string, error) {

@@ -32,6 +32,8 @@ workflows:
         - itunescon_user: ${ITUNESCON_USER}
         - password: ${PASSWORD}
         - app_password: ${APP_PASSWORD}
+        - api_key_path: ${API_KEY_PATH}
+        - api_issuer: ${API_ISSUER}
         run_if: true
 
   # ----------------------------------------------------------------
