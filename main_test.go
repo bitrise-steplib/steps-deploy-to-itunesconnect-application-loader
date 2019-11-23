@@ -170,3 +170,24 @@ func Test_getKeyPath(t *testing.T) {
 		})
 	}
 }
+
+func Test_altoolCommandNoProvider(t *testing.T) {
+	t.Log("altoolCommand test - no provider")
+	{
+		authParams := []string{"-u", "username", "-p", "password"}
+		altoolPath := "altool"
+		got := altoolCommand(altoolPath, "", append([]string{"--upload-app", "-f", "ipapath.ipa"}, authParams...))
+		t.Log(got.PrintableCommandArgs())
+		require.True(t, got.PrintableCommandArgs() == `altool "--upload-app" "-f" "ipapath.ipa" "-u" "username" "-p" "password"`)
+	}
+}
+
+func Test_altoolCommandProvider(t *testing.T) {
+	t.Log("altoolCommand test - provider")
+	{
+		authParams := []string{"-u", "username", "-p", "password"}
+		altoolPath := "altool"
+		got := altoolCommand(altoolPath, "provider_id", append([]string{"--upload-app", "-f", "ipapath.ipa"}, authParams...))
+		require.True(t, got.PrintableCommandArgs() == `altool "--upload-app" "-f" "ipapath.ipa" "-u" "username" "-p" "password" "--asc-provider" "provider_id"`)
+	}
+}
