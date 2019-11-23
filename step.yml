@@ -3,9 +3,9 @@ summary: Uploads binaries (.ipa / .pkg files) to [iTunes Connect](https://itunes
 description: |-
   Uploads binaries (.ipa / .pkg files) to [iTunes Connect](https://itunesconnect.apple.com/)
   using the Apple's Application Loader.
-  
+
   Setup guide and notes:
-    
+
   * Register an app on the **My Apps** page of iTunes Connect. Click on the *plus sign* and select the **New App** option. This requires an **admin** account.
   * Requires an app signed with **App Store distibution Provisioning Profile**.
   * Every build which you want to push to iTunes Connect must have a **unique build and version number** pair (*increment either or both before a new deploy to iTunes Connect*).
@@ -80,3 +80,9 @@ inputs:
       Issuer ID. Required if api_key_path is specified.
 
       **NOTE:** Only available from XCode 11.0 and above.
+- asc_provider: ""
+  opts:
+    title: "App Store Connect Provider"
+    description: |-
+      The Team ID (``--asc-provider`) this build should be uploaded against.
+      **NOTE:** If you have an account with multiple teams available, this input is required.
