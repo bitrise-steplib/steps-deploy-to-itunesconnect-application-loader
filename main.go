@@ -30,6 +30,7 @@ type Config struct {
 	AppPassword       stepconf.Secret `env:"app_password"`
 	APIKeyPath        string          `env:"api_key_path"`
 	APIIssuer         string          `env:"api_issuer"`
+	ASCProvider       string          `env:"asc_provider"`
 }
 
 func (cfg Config) validateEnvs() error {
@@ -217,7 +218,7 @@ func main() {
 	var cmd *command.Model
 	if xcodeVersion.MajorVersion < 11 {
 		altool := filepath.Join(xcpath, "/Contents/Applications/Application Loader.app/Contents/Frameworks/ITunesSoftwareService.framework/Support/altool")
-		cmd = command.New(altool, append([]string{"--upload-app", "-f", filePth}, authParams...)...)
+		cmd = altoolCommand(altool, cfg.ASCProvider, append([]string{"--upload-app", "-f", filePth}, authParams...))
 	} else {
 		if cfg.APIKeyPath != "" {
 			apiKeyID, err := prepareAPIKey(cfg.APIKeyPath)
@@ -226,7 +227,7 @@ func main() {
 			}
 			authParams = []string{"--apiKey", apiKeyID, "--apiIssuer", cfg.APIIssuer}
 		}
-		cmd = command.New("xcrun", append([]string{"altool", "--upload-app", "-f", filePth}, authParams...)...)
+		cmd = altoolCommand("xcrun", cfg.ASCProvider, append([]string{"altool", "--upload-app", "-f", filePth}, authParams...))
 	}
 	var outb bytes.Buffer
 	cmd.SetStdout(&outb)
@@ -255,6 +256,24 @@ func main() {
 	fmt.Println(out)
 
 	log.Donef("IPA uploaded")
+}
+
+/*
+	Returns a command.Model object, that when executed will run altool & upload the given ipa file.
+
+	Note: Provide ascProvider as "" to not apply --asc-provider.
+
+	Parameters:
+	- altoolPath: The path to the altool executable.
+	- ascProvider: The team ID that the .ipa should be uploaded against. Used to specify a team where multiple are available.
+	- params: Other parameters to specify .ipa filepath & auth credentials.
+ */
+func altoolCommand(altoolPath string, ascProvider string, params []string) *command.Model {
+	if ascProvider == "" {
+		return command.New(altoolPath, params...)
+	} else {
+		return command.New(altoolPath, append(params, "--asc-provider", ascProvider)...)
+	}
 }
 
 func xcodePath() (string, error) {
