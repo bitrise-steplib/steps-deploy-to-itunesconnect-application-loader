@@ -80,3 +80,11 @@ inputs:
       Issuer ID. Required if api_key_path is specified.
 
       **NOTE:** Only available from XCode 11.0 and above.
+- altool_options:
+  opts:
+    category: Debug
+    title: Additional options for `altool` call
+    description: |-
+      Options added to the end of the `altool` call.
+      You can use multiple options, separated by a space
+      character. Example: `--notarize-app --asc-provider" <<provider_id>>`
