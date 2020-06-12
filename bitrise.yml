@@ -34,7 +34,7 @@ workflows:
         - app_password: ${APP_PASSWORD}
         - api_key_path: ${API_KEY_PATH}
         - api_issuer: ${API_ISSUER}
-        - altool_options: "--notarize-app --verbose"
+        - altool_options: "--output-format json --verbose"
         run_if: true
 
   # ----------------------------------------------------------------
