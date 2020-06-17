@@ -19,6 +19,7 @@ import (
 	"github.com/bitrise-io/go-xcode/utility"
 	"github.com/bitrise-tools/go-steputils/input"
 	"github.com/bitrise-tools/go-steputils/stepconf"
+	shellquote "github.com/kballard/go-shellquote"
 )
 
 // Config ...
@@ -30,6 +31,7 @@ type Config struct {
 	AppPassword       stepconf.Secret `env:"app_password"`
 	APIKeyPath        string          `env:"api_key_path"`
 	APIIssuer         string          `env:"api_issuer"`
+	AdditionalParams  string          `env:"altool_options"`
 }
 
 func (cfg Config) validateEnvs() error {
@@ -214,10 +216,15 @@ func main() {
 
 	authParams := []string{"-u", cfg.ItunesConnectUser, "-p", password}
 
+	additionalParams, err := shellquote.Split(cfg.AdditionalParams)
+	if err != nil {
+		failf("Failed to parse additional parameters, error: %s", err)
+	}
+
 	var cmd *command.Model
 	if xcodeVersion.MajorVersion < 11 {
 		altool := filepath.Join(xcpath, "/Contents/Applications/Application Loader.app/Contents/Frameworks/ITunesSoftwareService.framework/Support/altool")
-		cmd = command.New(altool, append([]string{"--upload-app", "-f", filePth}, authParams...)...)
+		cmd = command.New(altool, append(append([]string{"--upload-app", "-f", filePth}, authParams...), additionalParams...)...)
 	} else {
 		if cfg.APIKeyPath != "" {
 			apiKeyID, err := prepareAPIKey(cfg.APIKeyPath)
@@ -226,7 +233,7 @@ func main() {
 			}
 			authParams = []string{"--apiKey", apiKeyID, "--apiIssuer", cfg.APIIssuer}
 		}
-		cmd = command.New("xcrun", append([]string{"altool", "--upload-app", "-f", filePth}, authParams...)...)
+		cmd = command.New("xcrun", append(append([]string{"altool", "--upload-app", "-f", filePth}, authParams...), additionalParams...)...)
 	}
 	var outb bytes.Buffer
 	cmd.SetStdout(&outb)

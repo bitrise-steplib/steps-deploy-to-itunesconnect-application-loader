@@ -34,6 +34,7 @@ workflows:
         - app_password: ${APP_PASSWORD}
         - api_key_path: ${API_KEY_PATH}
         - api_issuer: ${API_ISSUER}
+        - altool_options: "--output-format xml --verbose"
         run_if: true
 
   # ----------------------------------------------------------------
