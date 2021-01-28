@@ -48,7 +48,7 @@ func (cfg Config) validateEnvs() error {
 
 	switch {
 
-	case isAppleIDAuthType == isJWTAuthType:
+	case !isAppleIDAuthType && !isJWTAuthType:
 
 		return fmt.Errorf("one type of authentication required, either provide itunescon_user with password/app_password or api_key_path with api_issuer")
 
