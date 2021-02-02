@@ -59,27 +59,58 @@ toolkit:
     package_name: github.com/bitrise-steplib/steps-deploy-to-itunesconnect-application-loader
 
 inputs:
+- connection: "automatic"
+  opts:
+    title: Bitrise Apple Developer Connection
+    summary: The Apple Service authentication method the Step uses. By default, any enabled Bitrise Apple Developer connection is used and other authentication-related Step inputs are ignored.
+    description: |-
+      The input determines the method used for Apple Service authentication. By default, any enabled Bitrise Apple Developer connection is used and other authentication-related Step inputs are ignored.
+      
+      There are two types of Apple Developer connection you can enable on Bitrise: one is based on an API key of the App Store Connect API, the other is the legacy method of session-based authentication with an Apple ID. You can choose which type of Bitrise Apple Developer connection to use or you can tell the Step to only use Step inputs for authentication:
+      - `automatic`: Use any enabled Apple Developer connection, either based on Apple ID authentication or API key authentication.  Step inputs are only used as a fallback. API key authentication has priority over Apple ID authentication in both cases.
+      - `api_key`: Use the Apple Developer connection based on API key authentication. Authentication-related Step inputs are ignored.
+      - `apple_id`: Use the Apple Developer connection based on Apple ID authentication and **Application-specific password** Step input. Other authentication-related Step inputs are ignored.
+      - `off`: Do not use any Apple Developer Connection. Only authentication-related Step inputs are considered.
+    is_required: true
+    value_options:
+    - "automatic"
+    - "api_key"
+    - "apple_id"
+    - "off"
+- api_key_path: ""
+  opts:
+    title: "API Key: URL"
+    summary: Path to local or remote file
+    description: |-
+      Specify the path in an URL format where your API key is stored.
+      For example: `https://URL/TO/AuthKey_something.p8` or `file:///PATH/TO/AuthKey_something.p8`
+      You can upload your key on the **Generic File Storage** tab in the Workflow Editor and set the environment variable for the file here.
+      For example: `$BITRISEIO_MYKEY_URL`
+      **NOTE:** Only available from XCode 11.0 and above.
+- api_issuer: ""
+  opts:
+    title: "API Key: Issuer ID"
+    description: |-
+      Issuer ID. Required if API Key URL (api_key_path) is specified.
+      **NOTE:** Only available from XCode 11.0 and above.
 - itunescon_user: ""
   opts:
-    title: "Apple ID"
-    description: Login Apple ID for the iTunes Connect site.
+    title: "Apple ID: Apple ID"
+    description: Login Apple ID for iTunes Connect.
     is_sensitive: true
 - password: ""
   opts:
-    title: "Password"
-    description: |- 
-      Password for the specified Apple ID.
-      **NOTE:** Password or Application specific password is required when itunescon_user is specified.
+    title: "Apple ID: Password"
+    description: Password for the specified Apple ID.
     is_sensitive: true
 - app_password: ""
   opts:
-    title: "Application Specific Password"
+    title: "Apple ID: Application-specific password"
     description: |-
-      An Application specific password for the Apple ID.
-      **NOTE:** Application specific passwords can be created on the
+      An application-specific password for the Apple ID.
+      **NOTE:** Application-specific passwords can be created on the
       [AppleID Website](https://appleid.apple.com). It can be used to
-      surpass Two Factor Authentication.
-      **NOTE:** Password or Application specific password is required when itunescon_user is specified.
+      bypass two-factor authentication.
     is_sensitive: true
 - ipa_path: "$BITRISE_IPA_PATH"
   opts:
@@ -93,24 +124,6 @@ inputs:
     description: |-
       Path to your PKG file to be deployed.
       **NOTE:** This input or `IPA path` is required.
-- api_key_path: ""
-  opts:
-    title: "API Key URL"
-    description: |-
-      Specify the path in an URL format where your API key is stored.
-      For example: `https://URL/TO/AuthKey_something.p8` or `file:///PATH/TO/AuthKey_something.p8`
-
-      You can upload your key on the **Generic File Storage** tab in the Workflow Editor and set the environment variable for the file here.
-      For example: `$BITRISEIO_MYKEY_URL`
-
-      **NOTE:** Only available from XCode 11.0 and above.
-- api_issuer: ""
-  opts:
-    title: "Issuer ID"
-    description: |-
-      Issuer ID. Required if api_key_path is specified.
-
-      **NOTE:** Only available from XCode 11.0 and above.
 - altool_options:
   opts:
     category: Debug
