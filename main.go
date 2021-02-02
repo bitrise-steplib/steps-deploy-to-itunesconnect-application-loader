@@ -262,8 +262,12 @@ func main() {
 
 	commandStr := cmd.PrintableCommandArgs()
 	if authConfig.APIKey == nil {
-		commandStr = strings.Replace(commandStr, authConfig.AppleID.Password, "[REDACTED]", -1)
-		commandStr = strings.Replace(commandStr, authConfig.AppleID.AppSpecificPassword, "[REDACTED]", -1)
+		if authConfig.AppleID.Password != "" {
+			commandStr = strings.Replace(commandStr, authConfig.AppleID.Password, "[REDACTED]", -1)
+		}
+		if authConfig.AppleID.AppSpecificPassword != "" {
+			commandStr = strings.Replace(commandStr, authConfig.AppleID.AppSpecificPassword, "[REDACTED]", -1)
+		}
 	}
 	log.Printf("$ %s", commandStr)
 
