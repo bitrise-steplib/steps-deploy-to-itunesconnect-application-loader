@@ -24,14 +24,17 @@ import (
 
 // Config ...
 type Config struct {
-	IpaPath           string          `env:"ipa_path"`
-	PkgPath           string          `env:"pkg_path"`
-	ItunesConnectUser string          `env:"itunescon_user"`
-	Password          stepconf.Secret `env:"password"`
-	AppPassword       stepconf.Secret `env:"app_password"`
-	APIKeyPath        string          `env:"api_key_path"`
-	APIIssuer         string          `env:"api_issuer"`
-	AdditionalParams  string          `env:"altool_options"`
+	BitriseConnection   string          `env:"connection,opt[automatic,api_key,apple_id,off]"`
+	AppleID             string          `env:"itunescon_user"`
+	Password            stepconf.Secret `env:"password"`
+	AppSpecificPassword stepconf.Secret `env:"app_password"`
+	APIKeyPath          stepconf.Secret `env:"api_key_path"`
+	APIIssuer           string          `env:"api_issuer"`
+
+	IpaPath           string `env:"ipa_path"`
+	PkgPath           string `env:"pkg_path"`
+	ItunesConnectUser string `env:"itunescon_user"`
+	AdditionalParams  string `env:"altool_options"`
 }
 
 func (cfg Config) validateEnvs() error {
@@ -43,7 +46,7 @@ func (cfg Config) validateEnvs() error {
 
 	var (
 		isJWTAuthType     = (cfg.APIKeyPath != "" || cfg.APIIssuer != "")
-		isAppleIDAuthType = (cfg.AppPassword != "" || cfg.Password != "" || cfg.ItunesConnectUser != "")
+		isAppleIDAuthType = (cfg.AppSpecificPassword != "" || cfg.Password != "" || cfg.ItunesConnectUser != "")
 	)
 
 	switch {
@@ -58,7 +61,7 @@ func (cfg Config) validateEnvs() error {
 			return fmt.Errorf("no itunescon_user provided")
 		}
 		if err := input.ValidateIfNotEmpty(string(cfg.Password)); err != nil {
-			if err := input.ValidateIfNotEmpty(string(cfg.AppPassword)); err != nil {
+			if err := input.ValidateIfNotEmpty(string(cfg.AppSpecificPassword)); err != nil {
 				return fmt.Errorf("neither password nor app_password is provided")
 			}
 		}
@@ -192,8 +195,8 @@ func main() {
 	}
 
 	password := string(cfg.Password)
-	if string(cfg.AppPassword) != "" {
-		password = string(cfg.AppPassword)
+	if string(cfg.AppSpecificPassword) != "" {
+		password = string(cfg.AppSpecificPassword)
 	}
 
 	filePth := cfg.IpaPath
@@ -227,7 +230,7 @@ func main() {
 		cmd = command.New(altool, append(append([]string{"--upload-app", "-f", filePth}, authParams...), additionalParams...)...)
 	} else {
 		if cfg.APIKeyPath != "" {
-			apiKeyID, err := prepareAPIKey(cfg.APIKeyPath)
+			apiKeyID, err := prepareAPIKey(string(cfg.APIKeyPath))
 			if err != nil {
 				failf("Failed to prepare certificate for authentication, error: %s", err)
 			}
