@@ -1,51 +1,163 @@
-format_version: 5
+format_version: 11
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 app:
   envs:
-  - BITRISE_STEP_GIT_CLONE_URL: https://github.com/bitrise-steplib/steps-deploy-to-itunesconnect-application-loader.git
-  - MY_STEPLIB_REPO_FORK_GIT_URL: $MY_STEPLIB_REPO_FORK_GIT_URL
+  # prepare-test workflow params
+  - TEST_PROJECT_URL: https://github.com/bitrise-samples/Application-Loader-Test.git
+  - TEST_PROJECT_BRANCH: master
+  - BITRISE_CERTIFICATE_URL: $BITRISE_CERTIFICATE_URL
+  - BITRISE_CERTIFICATE_PASSPHRASE: $BITRISE_CERTIFICATE_PASSPHRASE
+  - BUNDLE_VERSION: $BITRISE_BUILD_NUMBER
+  - INFO_PLIST_PATH: "./Application Loader Test/Info.plist"
+  - BITRISE_PROJECT_PATH: "./Application Loader Test.xcodeproj"
+  - BITRISE_SCHEME: Application Loader Test
+  # test workflow params
+  - API_KEY_PATH: $API_KEY_PATH
+  - API_KEY_ISSUER: $API_KEY_ISSUER
+  - APPLE_ID: $APPLE_ID
+  - APP_SPECIFIC_PASSWORD: $APP_SPECIFIC_PASSWORD
 
 workflows:
-  test:
+  ci:
     before_run:
     - audit-this-step
+    - go-tests
+    after_run:
+    - test
+
+  audit-this-step:
+    title: Audit step.yml
+    steps:
+    - script:
+        title: stepman audit --step-yml ./step.yml
+        inputs:
+        - content: |-
+            #!/bin/bash
+            set -ex
+            stepman audit --step-yml ./step.yml
+  go-tests:
+    title: Run Go tests
     steps:
     - go-list:
     - golint:
     - errcheck:
     - go-test:
-    - change-workdir:
-        title: Switch working dir to test / _tmp dir
-        description: |-
-          To prevent step testing issues, like referencing relative
-          files with just './some-file' in the step's code, which would
-          work for testing the step from this directory directly
-          but would break if the step is included in another `bitrise.yml`.
-        run_if: true
-        inputs:
-        - path: ./_tmp
-        - is_create_path: true
-    - path::./:
-        title: Step Test
-        inputs:
-        - itunescon_user: ${ITUNESCON_USER}
-        - password: ${PASSWORD}
-        - app_password: ${APP_PASSWORD}
-        - api_key_path: ${API_KEY_PATH}
-        - api_issuer: ${API_ISSUER}
-        - altool_options: "--output-format xml --verbose"
-        run_if: true
 
-  # ----------------------------------------------------------------
-  # --- Utility workflows
-  dep-update:
-    title: Dep update
-    description: |
-      Used for updating bitrise dependencies with dep
+  test:
+    title: Run E2E tests
+    before_run:
+    # - test-apple-id-connection-auth
+    # - test-api-key-connection-auth
+    - test-apple-id-input-auth
+    - test-api-key-input-auth
+
+  test-api-key-service-auth:
+    title: Test API key connection authentication
+    before_run:
+      - prepare-test
+    steps:
+    - path::./:
+        inputs:
+        - connection: automatic
+        - altool_options: "--output-format xml --verbose"
+
+  test-apple-id-connection-auth:
+    title: Test Apple ID connection authentication
+    before_run:
+    - prepare-test
+    steps:
+    - path::./:
+        inputs:
+        - connection: apple_id
+        - altool_options: "--output-format xml --verbose"
+
+  test-api-key-input-auth:
+    title: Test API key Step Input authentication
+    before_run:
+      - prepare-test
+    steps:
+    - path::./:
+        inputs:
+        - connection: "off"
+        - api_key_path: $API_KEY_PATH
+        - api_issuer: $API_KEY_ISSUER
+        - altool_options: "--output-format xml --verbose"
+
+  test-apple-id-input-auth:
+    title: Test Apple ID Step Input authentication
+    before_run:
+    - prepare-test
+    steps:
+    - path::./:
+        inputs:
+        - connection: "off"
+        - itunescon_user: $APPLE_ID
+        - app_password: $APP_SPECIFIC_PASSWORD
+        - altool_options: "--output-format xml --verbose"
+
+  prepare-test:
+    title: Prepare test
+    envs:
+    - DISTRIBUTION: app-store
+    - TMP_DIR: ./_tmp
     steps:
     - script:
-        title: Dependency update
+        title: rm -rf ./_tmp
+        inputs:
+        - content: rm -rf $TMP_DIR
+    - change-workdir:
+        title: cd ./_tmp
+        run_if: true
+        inputs:
+        - path: $TMP_DIR
+        - is_create_path: true
+    - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git:
+        title: Clone test project
+        inputs:
+        - clone_into_dir: $TMP_DIR
+        - repository_url: $TEST_PROJECT_URL
+        - branch: $TEST_PROJECT_BRANCH
+    - ios-auto-provision-appstoreconnect:
+        title: Prepare codesign assets
+        inputs:
+        - certificate_urls: $BITRISE_CERTIFICATE_URL
+        - passphrases: $BITRISE_CERTIFICATE_PASSPHRASE
+        - distribution_type: $DISTRIBUTION
+    - script:
+        title: Prepare Build Number
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            CURRENT_BUILD_NUMBER=${BITRISE_BUILD_NUMBER}
+            BITRISE_BUILD_NUMBER=$((($(gdate +%Y%m%d%H%M%S)-20000000000000)*10000))
+            if [[ -z "${BITRISE_BUILD_NUMBER}" ]]; then
+              echo "error: failed to calculated build number"
+              exit 1
+            fi
+            if [[ -n "${CURRENT_BUILD_NUMBER}" ]]; then
+              BITRISE_BUILD_NUMBER=$((${BITRISE_BUILD_NUMBER}+${CURRENT_BUILD_NUMBER}))
+            fi
+
+            envman add --key BITRISE_BUILD_NUMBER --value "${BITRISE_BUILD_NUMBER}"
+    - set-xcode-build-number:
+        title: Set Build Number
+        run_if: true
+        inputs:
+        - build_version: $BUNDLE_VERSION
+        - plist_path: $INFO_PLIST_PATH
+    - xcode-archive:
+        title: Create Archive
+        inputs:
+        - project_path: $BITRISE_PROJECT_PATH
+        - scheme: $BITRISE_SCHEME
+        - export_method: $DISTRIBUTION
+
+  dep-update:
+    title: Update Go dependencies
+    steps:
+    - script:
+        title: dep ensure -v -update
         inputs:
         - content: |-
             #!/bin/bash
@@ -53,14 +165,3 @@ workflows:
             go get -u -v github.com/golang/dep/cmd/dep
             dep ensure -v
             dep ensure -v -update
-            
-  # ----------------------------------------------------------------
-  # --- workflows to Share this step into a Step Library
-  audit-this-step:
-    steps:
-    - script:
-        inputs:
-        - content: |-
-            #!/bin/bash
-            set -ex
-            stepman audit --step-yml ./step.yml
