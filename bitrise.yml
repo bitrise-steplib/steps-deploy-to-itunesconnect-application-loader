@@ -115,7 +115,7 @@ workflows:
     - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git:
         title: Clone test project
         inputs:
-        - clone_into_dir: $TMP_DIR
+        - clone_into_dir: $BITRISE_SOURCE_DIR
         - repository_url: $TEST_PROJECT_URL
         - branch: $TEST_PROJECT_BRANCH
     - ios-auto-provision-appstoreconnect:
