@@ -51,7 +51,7 @@ workflows:
     - test-apple-id-input-auth
     - test-api-key-input-auth
 
-  test-api-key-service-auth:
+  test-api-key-connection-auth:
     title: Test API key connection authentication
     before_run:
       - prepare-test
