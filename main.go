@@ -16,7 +16,6 @@ import (
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-tools/go-steputils/input"
 	"github.com/bitrise-tools/go-steputils/stepconf"
 	shellquote "github.com/kballard/go-shellquote"
 )
@@ -40,44 +39,17 @@ type Config struct {
 	BuildAPIToken stepconf.Secret `env:"BITRISE_BUILD_API_TOKEN"`
 }
 
-func (cfg Config) validateEnvs() error {
-	if err := input.ValidateIfNotEmpty(cfg.IpaPath); err != nil {
-		if err := input.ValidateIfNotEmpty(cfg.PkgPath); err != nil {
-			return fmt.Errorf("neither ipa_path nor pkg_path is provided")
-		}
-	}
+func (cfg Config) validateArtifact() error {
+	cfg.IpaPath = strings.TrimSpace(cfg.IpaPath)
+	cfg.PkgPath = strings.TrimSpace(cfg.PkgPath)
 
 	var (
-		isJWTAuthType     = (cfg.APIKeyPath != "" || cfg.APIIssuer != "")
-		isAppleIDAuthType = (cfg.AppSpecificPassword != "" || cfg.Password != "" || cfg.ItunesConnectUser != "")
+		deployIPA = cfg.IpaPath != ""
+		deployPKG = cfg.PkgPath != ""
 	)
 
-	switch {
-
-	case isAppleIDAuthType == isJWTAuthType:
-
-		return fmt.Errorf("one type of authentication required, either provide itunescon_user with password/app_password or api_key_path with api_issuer")
-
-	case isAppleIDAuthType:
-
-		if err := input.ValidateIfNotEmpty(string(cfg.ItunesConnectUser)); err != nil {
-			return fmt.Errorf("no itunescon_user provided")
-		}
-		if err := input.ValidateIfNotEmpty(string(cfg.Password)); err != nil {
-			if err := input.ValidateIfNotEmpty(string(cfg.AppSpecificPassword)); err != nil {
-				return fmt.Errorf("neither password nor app_password is provided")
-			}
-		}
-
-	case isJWTAuthType:
-
-		if err := input.ValidateIfNotEmpty(string(cfg.APIIssuer)); err != nil {
-			return fmt.Errorf("no api_issuer provided")
-		}
-		if err := input.ValidateIfNotEmpty(string(cfg.APIKeyPath)); err != nil {
-			return fmt.Errorf("no api_key_path provided")
-		}
-
+	if deployIPA == deployPKG {
+		return fmt.Errorf("one artifact is required and only one is allowed, either provide ipa_path or pkg_path")
 	}
 
 	return nil
@@ -175,7 +147,7 @@ func main() {
 	stepconf.Print(cfg)
 	fmt.Println()
 
-	if err := cfg.validateEnvs(); err != nil {
+	if err := cfg.validateArtifact(); err != nil {
 		failf("Input error: %s", err)
 	}
 
@@ -241,7 +213,7 @@ func main() {
 	}
 
 	filePth := cfg.IpaPath
-	if cfg.PkgPath != "" {
+	if filePth == "" {
 		filePth = cfg.PkgPath
 	}
 
