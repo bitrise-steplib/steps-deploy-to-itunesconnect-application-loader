@@ -210,7 +210,6 @@ func main() {
 	} else {
 		password := string(authConfig.AppleID.Password)
 		if string(authConfig.AppleID.AppSpecificPassword) != "" {
-			fmt.Println("Using app-specifc password")
 			password = string(authConfig.AppleID.AppSpecificPassword)
 		}
 		authParams = []string{"--username", authConfig.AppleID.Username, "--password", password}
