@@ -208,11 +208,11 @@ func main() {
 		}
 		authParams = []string{"--apiKey", authConfig.APIKey.KeyID, "--apiIssuer", authConfig.APIKey.IssuerID}
 	} else {
-		password := string(cfg.Password)
-		if string(cfg.AppSpecificPassword) != "" {
-			password = string(cfg.AppSpecificPassword)
+		password := string(authConfig.AppleID.Password)
+		if string(authConfig.AppleID.AppSpecificPassword) != "" {
+			password = string(authConfig.AppleID.AppSpecificPassword)
 		}
-		authParams = []string{"-u", cfg.ItunesConnectUser, "-p", password}
+		authParams = []string{"-u", authConfig.AppleID.Username, "-p", password}
 	}
 
 	filePth := cfg.IpaPath
