@@ -70,6 +70,7 @@ workflows:
         inputs:
         - connection: apple_id
         - altool_options: "--output-format xml --verbose"
+        - app_password: $APP_SPECIFIC_PASSWORD # App-specific password can not be set for the connection
 
   test-api-key-input-auth:
     title: Test API key Step Input authentication
