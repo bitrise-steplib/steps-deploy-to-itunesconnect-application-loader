@@ -71,17 +71,6 @@ workflows:
           inputs:
             - connection: apple_id
             - altool_options: "--output-format xml --verbose"
-            - app_password: $APP_SPECIFIC_PASSWORD # App-specific password can not be set for the connection
-
-  test-apple-id-connection-auth-withouth-password-input:
-    title: Test Apple ID connection authentication
-    before_run:
-      - prepare-test
-    steps:
-      - path::./:
-          inputs:
-            - connection: apple_id
-            - altool_options: "--output-format xml --verbose"
 
   test-api-key-input-auth:
     title: Test API key Step Input authentication
