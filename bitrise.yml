@@ -49,7 +49,7 @@ workflows:
       - test-apple-id-connection-auth
       - test-api-key-connection-auth
       - test-apple-id-input-auth
-        - test-apple-id-connection-auth-withouth-password-input
+      - test-apple-id-connection-auth-withouth-password-input
       - test-api-key-input-auth
 
   test-api-key-connection-auth:
