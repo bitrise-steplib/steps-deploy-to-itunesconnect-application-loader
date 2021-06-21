@@ -17,6 +17,7 @@ import (
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/devportalservice"
+	"github.com/bitrise-io/go-xcode/utility"
 	shellquote "github.com/kballard/go-shellquote"
 )
 
@@ -177,6 +178,11 @@ func main() {
 		failf("Issue with authentication related inputs: %v", err)
 	}
 
+	xcodeVersion, err := utility.GetXcodeVersion()
+	if err != nil {
+		failf("Failed to determine Xcode version: %s", err)
+	}
+
 	//
 	// Select and fetch Apple authenication source
 	authSources, err := parseAuthSources(cfg.BitriseConnection)
@@ -239,7 +245,8 @@ func main() {
 	}
 
 	uploadParams := []string{"--upload-app", "-f", filePth}
-	if !sliceutil.IsStringInSlice(typeKey, additionalParams) {
+	// Platform type parameter was introduced in Xcode 13
+	if xcodeVersion.MajorVersion >= 13 && !sliceutil.IsStringInSlice(typeKey, additionalParams) {
 		uploadParams = append(uploadParams, typeKey, mapPlatformToTypeValue(cfg.Platform))
 	}
 
