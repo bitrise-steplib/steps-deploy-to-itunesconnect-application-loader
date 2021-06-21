@@ -9,14 +9,14 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/bitrise-io/go-utils/fileutil"
-	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-io/go-xcode/appleauth"
-	"github.com/bitrise-io/go-xcode/devportalservice"
-
 	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/sliceutil"
+	"github.com/bitrise-io/go-xcode/appleauth"
+	"github.com/bitrise-io/go-xcode/devportalservice"
 	shellquote "github.com/kballard/go-shellquote"
 )
 
@@ -31,6 +31,7 @@ type Config struct {
 
 	IpaPath           string `env:"ipa_path"`
 	PkgPath           string `env:"pkg_path"`
+	Platform          string `env:"platform,opt[ios,macos,tvos]"`
 	ItunesConnectUser string `env:"itunescon_user"`
 	AdditionalParams  string `env:"altool_options"`
 
@@ -53,6 +54,16 @@ func (cfg Config) validateArtifact() error {
 	}
 
 	return nil
+}
+
+// mapPlatformToTypeValue maps platform to an altool parameter
+//  -t, --type {macos | ios | appletvos}     Specify the platform of the file, or of the host app when using --upload-hosted-content. (Output by 'xcrun altool -h')
+func mapPlatformToTypeValue(platform string) string {
+	if platform == "tvos" {
+		return "appletvos"
+	}
+
+	return platform
 }
 
 func parseAuthSources(connection string) ([]appleauth.Source, error) {
@@ -140,6 +151,8 @@ func writeAPIKey(privateKey, keyID string) error {
 	return fileutil.WriteStringToFile(keyPath, privateKey)
 }
 
+const typeKey = "--type"
+
 func main() {
 	var cfg Config
 	if err := stepconf.Parse(&cfg); err != nil {
@@ -225,7 +238,13 @@ func main() {
 		failf("Failed to parse additional parameters, error: %s", err)
 	}
 
-	altoolParams := append([]string{"altool", "--upload-app", "-f", filePth}, authParams...)
+	uploadParams := []string{"--upload-app", "-f", filePth}
+	if !sliceutil.IsStringInSlice(typeKey, additionalParams) {
+		uploadParams = append(uploadParams, typeKey, mapPlatformToTypeValue(cfg.Platform))
+	}
+
+	altoolParams := append([]string{"altool"}, uploadParams...)
+	altoolParams = append(altoolParams, authParams...)
 	altoolParams = append(altoolParams, additionalParams...)
 	cmd := command.New("xcrun", altoolParams...)
 	var outb bytes.Buffer

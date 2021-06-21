@@ -131,6 +131,15 @@ inputs:
       description: |-
         Path to your PKG file to be deployed.
         **NOTE:** This input or `IPA path` is required.
+  - platform: "ios"
+    opts:
+      title: "Platform"
+      description: |-
+        Specify the platform of the file.
+      value_options:
+      - "ios"
+      - "macos"
+      - "tvos"
   - altool_options:
     opts:
       category: Debug
