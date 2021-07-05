@@ -17,6 +17,8 @@ import (
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/devportalservice"
+	"github.com/bitrise-io/go-xcode/ipa"
+	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/utility"
 	shellquote "github.com/kballard/go-shellquote"
 )
@@ -32,7 +34,7 @@ type Config struct {
 
 	IpaPath           string `env:"ipa_path"`
 	PkgPath           string `env:"pkg_path"`
-	Platform          string `env:"platform,opt[ios,macos,tvos]"`
+	Platform          string `env:"platform,opt[auto,ios,macos,tvos]"`
 	ItunesConnectUser string `env:"itunescon_user"`
 	AdditionalParams  string `env:"altool_options"`
 
@@ -57,9 +59,42 @@ func (cfg Config) validateArtifact() error {
 	return nil
 }
 
-// mapPlatformToTypeValue maps platform to an altool parameter
+// getPlatformType maps platform to an altool parameter
 //  -t, --type {macos | ios | appletvos}     Specify the platform of the file, or of the host app when using --upload-hosted-content. (Output by 'xcrun altool -h')
-func mapPlatformToTypeValue(platform string) string {
+// if 'auto' is selected the 'DTPlatformName' is read from Info.plist
+func getPlatformType(ipaPath, platform string) string {
+	if platform == "auto" {
+		fallback := func() string {
+			log.Warnf("Failed to analyze %s, fallback platform type to ios", ipaPath)
+			return "ios"
+		}
+		// *.pkg -> macos
+		if ipaPath == "" {
+			return "macos"
+		}
+		plistPath, err := ipa.UnwrapEmbeddedInfoPlist(ipaPath)
+		if err != nil {
+			return fallback()
+		}
+		plist, err := plistutil.NewPlistDataFromFile(plistPath)
+		if err != nil {
+			return fallback()
+		}
+		platform, ok := plist.GetString("DTPlatformName")
+		if !ok {
+			return fallback()
+		}
+		switch platform {
+		case "appletvos", "appletvsimulator":
+			return "appletvos"
+		case "macosx":
+			return "macos"
+		case "iphoneos", "iphonesimulator", "watchos", "watchsimulator":
+			return "ios"
+		default:
+			return fallback()
+		}
+	}
 	if platform == "tvos" {
 		return "appletvos"
 	}
@@ -238,6 +273,9 @@ func main() {
 	if filePth == "" {
 		filePth = cfg.PkgPath
 	}
+	if filePth == "" {
+		failf("Either IPA path or PKG path has to be provided")
+	}
 
 	additionalParams, err := shellquote.Split(cfg.AdditionalParams)
 	if err != nil {
@@ -247,7 +285,7 @@ func main() {
 	uploadParams := []string{"--upload-app", "-f", filePth}
 	// Platform type parameter was introduced in Xcode 13
 	if xcodeVersion.MajorVersion >= 13 && !sliceutil.IsStringInSlice(typeKey, additionalParams) {
-		uploadParams = append(uploadParams, typeKey, mapPlatformToTypeValue(cfg.Platform))
+		uploadParams = append(uploadParams, typeKey, getPlatformType(cfg.IpaPath, cfg.Platform))
 	}
 
 	altoolParams := append([]string{"altool"}, uploadParams...)

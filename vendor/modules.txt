@@ -13,10 +13,17 @@ github.com/bitrise-io/go-utils/parseutil
 github.com/bitrise-io/go-utils/pathutil
 github.com/bitrise-io/go-utils/pointers
 github.com/bitrise-io/go-utils/sliceutil
+github.com/bitrise-io/go-utils/ziputil
 # github.com/bitrise-io/go-xcode v0.0.0-20210602133333-d2c17ac1ee9b
 ## explicit
 github.com/bitrise-io/go-xcode/appleauth
 github.com/bitrise-io/go-xcode/devportalservice
+github.com/bitrise-io/go-xcode/ipa
+github.com/bitrise-io/go-xcode/models
+github.com/bitrise-io/go-xcode/plistutil
+github.com/bitrise-io/go-xcode/utility
 # github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 ## explicit
 github.com/kballard/go-shellquote
+# howett.net/plist v0.0.0-20201203080718-1454fab16a06
+howett.net/plist
