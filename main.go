@@ -43,6 +43,14 @@ type Config struct {
 	BuildAPIToken stepconf.Secret `env:"BITRISE_BUILD_API_TOKEN"`
 }
 
+type platformType string
+
+const (
+	iOS   platformType = "ios"
+	tvOS               = "appletvos"
+	macOS              = "macos"
+)
+
 func (cfg Config) validateArtifact() error {
 	cfg.IpaPath = strings.TrimSpace(cfg.IpaPath)
 	cfg.PkgPath = strings.TrimSpace(cfg.PkgPath)
@@ -62,15 +70,16 @@ func (cfg Config) validateArtifact() error {
 // getPlatformType maps platform to an altool parameter
 //  -t, --type {macos | ios | appletvos}     Specify the platform of the file, or of the host app when using --upload-hosted-content. (Output by 'xcrun altool -h')
 // if 'auto' is selected the 'DTPlatformName' is read from Info.plist
-func getPlatformType(ipaPath, platform string) string {
-	if platform == "auto" {
-		fallback := func() string {
-			log.Warnf("Failed to analyze %s, fallback platform type to ios", ipaPath)
-			return "ios"
-		}
+func getPlatformType(ipaPath, platform string) platformType {
+	fallback := func() platformType {
+		log.Warnf("Failed to analyze %s, fallback platform type to ios", ipaPath)
+		return iOS
+	}
+	switch platform {
+	case "auto":
 		// *.pkg -> macos
 		if ipaPath == "" {
-			return "macos"
+			return macOS
 		}
 		plistPath, err := ipa.UnwrapEmbeddedInfoPlist(ipaPath)
 		if err != nil {
@@ -86,20 +95,23 @@ func getPlatformType(ipaPath, platform string) string {
 		}
 		switch platform {
 		case "appletvos", "appletvsimulator":
-			return "appletvos"
+			return tvOS
 		case "macosx":
-			return "macos"
+			return macOS
 		case "iphoneos", "iphonesimulator", "watchos", "watchsimulator":
-			return "ios"
+			return iOS
 		default:
 			return fallback()
 		}
+	case "ios":
+		return iOS
+	case "macos":
+		return macOS
+	case "tvos":
+		return tvOS
+	default:
+		return fallback()
 	}
-	if platform == "tvos" {
-		return "appletvos"
-	}
-
-	return platform
 }
 
 func parseAuthSources(connection string) ([]appleauth.Source, error) {
@@ -285,7 +297,7 @@ func main() {
 	uploadParams := []string{"--upload-app", "-f", filePth}
 	// Platform type parameter was introduced in Xcode 13
 	if xcodeVersion.MajorVersion >= 13 && !sliceutil.IsStringInSlice(typeKey, additionalParams) {
-		uploadParams = append(uploadParams, typeKey, getPlatformType(cfg.IpaPath, cfg.Platform))
+		uploadParams = append(uploadParams, typeKey, string(getPlatformType(cfg.IpaPath, cfg.Platform)))
 	}
 
 	altoolParams := append([]string{"altool"}, uploadParams...)
