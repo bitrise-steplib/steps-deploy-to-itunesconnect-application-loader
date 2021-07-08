@@ -131,6 +131,16 @@ inputs:
       description: |-
         Path to your PKG file to be deployed.
         **NOTE:** This input or `IPA path` is required.
+  - platform: "auto"
+    opts:
+      title: "Platform"
+      description: |-
+        Specify the platform of the file. When `auto` is selected the step uses the `Info.plist` to set the platform.
+      value_options:
+      - "auto"
+      - "ios"
+      - "macos"
+      - "tvos"
   - altool_options:
     opts:
       category: Debug

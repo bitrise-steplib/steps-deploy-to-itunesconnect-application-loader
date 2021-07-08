@@ -1,8 +1,8 @@
-# github.com/bitrise-io/go-steputils v0.0.0-20210507072936-92fde382fb33
+# github.com/bitrise-io/go-steputils v0.0.0-20210527075147-910ce7a105a1
 ## explicit
 github.com/bitrise-io/go-steputils/input
 github.com/bitrise-io/go-steputils/stepconf
-# github.com/bitrise-io/go-utils v0.0.0-20210507100250-37de47dfa6ce
+# github.com/bitrise-io/go-utils v0.0.0-20210520073355-367fa34178f5
 ## explicit
 github.com/bitrise-io/go-utils/colorstring
 github.com/bitrise-io/go-utils/command
@@ -12,10 +12,18 @@ github.com/bitrise-io/go-utils/log
 github.com/bitrise-io/go-utils/parseutil
 github.com/bitrise-io/go-utils/pathutil
 github.com/bitrise-io/go-utils/pointers
-# github.com/bitrise-io/go-xcode v0.0.0-20210512084902-047d3c3d372a
+github.com/bitrise-io/go-utils/sliceutil
+github.com/bitrise-io/go-utils/ziputil
+# github.com/bitrise-io/go-xcode v0.0.0-20210602133333-d2c17ac1ee9b
 ## explicit
 github.com/bitrise-io/go-xcode/appleauth
 github.com/bitrise-io/go-xcode/devportalservice
+github.com/bitrise-io/go-xcode/ipa
+github.com/bitrise-io/go-xcode/models
+github.com/bitrise-io/go-xcode/plistutil
+github.com/bitrise-io/go-xcode/utility
 # github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 ## explicit
 github.com/kballard/go-shellquote
+# howett.net/plist v0.0.0-20201203080718-1454fab16a06
+howett.net/plist

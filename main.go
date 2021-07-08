@@ -9,14 +9,17 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/bitrise-io/go-utils/fileutil"
-	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-io/go-xcode/appleauth"
-	"github.com/bitrise-io/go-xcode/devportalservice"
-
 	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/sliceutil"
+	"github.com/bitrise-io/go-xcode/appleauth"
+	"github.com/bitrise-io/go-xcode/devportalservice"
+	"github.com/bitrise-io/go-xcode/ipa"
+	"github.com/bitrise-io/go-xcode/plistutil"
+	"github.com/bitrise-io/go-xcode/utility"
 	shellquote "github.com/kballard/go-shellquote"
 )
 
@@ -31,6 +34,7 @@ type Config struct {
 
 	IpaPath           string `env:"ipa_path"`
 	PkgPath           string `env:"pkg_path"`
+	Platform          string `env:"platform,opt[auto,ios,macos,tvos]"`
 	ItunesConnectUser string `env:"itunescon_user"`
 	AdditionalParams  string `env:"altool_options"`
 
@@ -38,6 +42,14 @@ type Config struct {
 	BuildURL      string          `env:"BITRISE_BUILD_URL"`
 	BuildAPIToken stepconf.Secret `env:"BITRISE_BUILD_API_TOKEN"`
 }
+
+type platformType string
+
+const (
+	iOS   platformType = "ios"
+	tvOS               = "appletvos"
+	macOS              = "macos"
+)
 
 func (cfg Config) validateArtifact() error {
 	cfg.IpaPath = strings.TrimSpace(cfg.IpaPath)
@@ -53,6 +65,53 @@ func (cfg Config) validateArtifact() error {
 	}
 
 	return nil
+}
+
+// getPlatformType maps platform to an altool parameter
+//  -t, --type {macos | ios | appletvos}     Specify the platform of the file, or of the host app when using --upload-hosted-content. (Output by 'xcrun altool -h')
+// if 'auto' is selected the 'DTPlatformName' is read from Info.plist
+func getPlatformType(ipaPath, platform string) platformType {
+	fallback := func() platformType {
+		log.Warnf("Failed to analyze %s, fallback platform type to ios", ipaPath)
+		return iOS
+	}
+	switch platform {
+	case "auto":
+		// *.pkg -> macos
+		if ipaPath == "" {
+			return macOS
+		}
+		plistPath, err := ipa.UnwrapEmbeddedInfoPlist(ipaPath)
+		if err != nil {
+			return fallback()
+		}
+		plist, err := plistutil.NewPlistDataFromFile(plistPath)
+		if err != nil {
+			return fallback()
+		}
+		platform, ok := plist.GetString("DTPlatformName")
+		if !ok {
+			return fallback()
+		}
+		switch platform {
+		case "appletvos", "appletvsimulator":
+			return tvOS
+		case "macosx":
+			return macOS
+		case "iphoneos", "iphonesimulator", "watchos", "watchsimulator":
+			return iOS
+		default:
+			return fallback()
+		}
+	case "ios":
+		return iOS
+	case "macos":
+		return macOS
+	case "tvos":
+		return tvOS
+	default:
+		return fallback()
+	}
 }
 
 func parseAuthSources(connection string) ([]appleauth.Source, error) {
@@ -140,6 +199,8 @@ func writeAPIKey(privateKey, keyID string) error {
 	return fileutil.WriteStringToFile(keyPath, privateKey)
 }
 
+const typeKey = "--type"
+
 func main() {
 	var cfg Config
 	if err := stepconf.Parse(&cfg); err != nil {
@@ -162,6 +223,11 @@ func main() {
 	}
 	if err := authInputs.Validate(); err != nil {
 		failf("Issue with authentication related inputs: %v", err)
+	}
+
+	xcodeVersion, err := utility.GetXcodeVersion()
+	if err != nil {
+		failf("Failed to determine Xcode version: %s", err)
 	}
 
 	//
@@ -219,13 +285,23 @@ func main() {
 	if filePth == "" {
 		filePth = cfg.PkgPath
 	}
+	if filePth == "" {
+		failf("Either IPA path or PKG path has to be provided")
+	}
 
 	additionalParams, err := shellquote.Split(cfg.AdditionalParams)
 	if err != nil {
 		failf("Failed to parse additional parameters, error: %s", err)
 	}
 
-	altoolParams := append([]string{"altool", "--upload-app", "-f", filePth}, authParams...)
+	uploadParams := []string{"--upload-app", "-f", filePth}
+	// Platform type parameter was introduced in Xcode 13
+	if xcodeVersion.MajorVersion >= 13 && !sliceutil.IsStringInSlice(typeKey, additionalParams) {
+		uploadParams = append(uploadParams, typeKey, string(getPlatformType(cfg.IpaPath, cfg.Platform)))
+	}
+
+	altoolParams := append([]string{"altool"}, uploadParams...)
+	altoolParams = append(altoolParams, authParams...)
 	altoolParams = append(altoolParams, additionalParams...)
 	cmd := command.New("xcrun", altoolParams...)
 	var outb bytes.Buffer
