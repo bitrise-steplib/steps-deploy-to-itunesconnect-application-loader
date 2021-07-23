@@ -17,14 +17,20 @@ func (_m *mockUploader) upload() (string, string, error) {
 	if rf, ok := ret.Get(0).(func() string); ok {
 		r0 = rf()
 	} else {
-		r0 = ret.Get(0).(string)
+		r0, ok = ret.Get(0).(string)
+		if !ok {
+			r0 = ""
+		}
 	}
 
 	var r1 string
 	if rf, ok := ret.Get(1).(func() string); ok {
 		r1 = rf()
 	} else {
-		r1 = ret.Get(1).(string)
+		r1, ok = ret.Get(1).(string)
+		if !ok {
+			r1 = ""
+		}
 	}
 
 	var r2 error
