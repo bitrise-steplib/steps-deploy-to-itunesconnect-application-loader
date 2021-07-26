@@ -3,11 +3,13 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/avast/retry-go/v3"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-utils/command"
@@ -303,15 +305,46 @@ func main() {
 	altoolParams := append([]string{"altool"}, uploadParams...)
 	altoolParams = append(altoolParams, authParams...)
 	altoolParams = append(altoolParams, additionalParams...)
-	cmd := command.New("xcrun", altoolParams...)
-	var outb bytes.Buffer
-	cmd.SetStdout(&outb)
-	cmd.SetStderr(os.Stderr)
+	out, err := uploadWithRetry(newAltoolUploader(altoolParams, filePth, authConfig))
+	if err != nil {
+		failf("Uploading IPA failed: %s", err)
+	}
 
-	fileName := filepath.Base(filePth)
+	if matches := regexp.MustCompile(`(?i)Generated JWT: (.*)`).FindStringSubmatch(out); len(matches) == 2 {
+		out = strings.Replace(out, matches[1], "[REDACTED]", -1)
+	}
+
+	fmt.Println(out)
+
+	log.Donef("IPA uploaded")
+}
+
+type uploader interface {
+	upload() (string, string, error)
+}
+
+type altoolUploader struct {
+	altoolParams []string
+	filePth      string
+	authConfig   appleauth.Credentials
+}
+
+func newAltoolUploader(altoolParams []string, filePth string, authConfig appleauth.Credentials) uploader {
+	return altoolUploader{altoolParams: altoolParams, filePth: filePth, authConfig: authConfig}
+}
+
+func (a altoolUploader) upload() (string, string, error) {
+	cmd := command.New("xcrun", a.altoolParams...)
+	var sb bytes.Buffer
+	var eb bytes.Buffer
+	cmd.SetStdout(&sb)
+	cmd.SetStderr(&eb)
+
+	fileName := filepath.Base(a.filePth)
 	log.Infof("Uploading - %s ...", fileName)
 
 	commandStr := cmd.PrintableCommandArgs()
+	authConfig := a.authConfig
 	if authConfig.APIKey == nil {
 		if authConfig.AppleID.Password != "" {
 			commandStr = strings.Replace(commandStr, authConfig.AppleID.Password, "[REDACTED]", -1)
@@ -322,19 +355,72 @@ func main() {
 	}
 	log.Printf("$ %s", commandStr)
 
-	if err := cmd.Run(); err != nil {
-		failf("Uploading IPA failed: %s", err)
+	err := cmd.Run()
+	ioString := sb.String()
+	errorString := eb.String()
+	if errorString != "" {
+		log.Errorf("%s", errorString)
 	}
 
-	out := outb.String()
-
-	if matches := regexp.MustCompile(`(?i)Generated JWT: (.*)`).FindStringSubmatch(out); len(matches) == 2 {
-		out = strings.Replace(out, matches[1], "[REDACTED]", -1)
+	if err != nil {
+		return ioString, errorString, err
 	}
 
-	fmt.Println(out)
+	return ioString, errorString, nil
+}
 
-	log.Donef("IPA uploaded")
+func uploadWithRetry(uploader uploader, opts ...retry.Option) (string, error) {
+	var regexList = []string{
+		// https://bitrise.atlassian.net/browse/STEP-1190
+		`(?s).*Unable to determine the application using bundleId.*-19201.*`,
+		`(?s).*TransporterService.*error occurred trying to read the bundle.*-18000.*`,
+		`(?s).*server returned an invalid response.*try your request again.*`,
+	}
+	var result string
+	attempts := uint(10)
+	mOpts := []retry.Option{
+		retry.Attempts(attempts),
+		retry.Delay(300 * time.Millisecond),
+		retry.LastErrorOnly(true),
+		retry.OnRetry(func(n uint, err error) {
+			if n == 0 {
+				log.Warnf("Upload failed, but we recognized it as possibly recoverable error, retrying...")
+			} else if n != attempts-1 {
+				log.Warnf("Attempt %d failed, retrying...", n+1)
+			} else {
+				log.Warnf("Attempt %d failed", attempts)
+			}
+		}),
+	}
+
+	for _, opt := range opts {
+		mOpts = append(mOpts, opt)
+	}
+
+	err := retry.Do(
+		func() error {
+			r, errorString, err := uploader.upload()
+			if err != nil {
+				for _, re := range regexList {
+					matched, err2 := regexp.MatchString(re, errorString)
+					if err2 != nil {
+						log.Warnf("Couldn't match %s with regex %s", errorString, re)
+						continue
+					}
+					if matched {
+						return err
+					}
+				}
+				return retry.Unrecoverable(err)
+			}
+			result = r
+			return nil
+		},
+		mOpts...)
+	if err != nil {
+		return "", err
+	}
+	return result, nil
 }
 
 func failf(format string, v ...interface{}) {
