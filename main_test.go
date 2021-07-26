@@ -81,29 +81,6 @@ func Test_getKeyPath(t *testing.T) {
 	}
 }
 
-func Test_uploadWithRetry(t *testing.T) {
-	tests := []struct {
-		name     string
-		uploader uploader
-		want     string
-		wantErr  bool
-	}{
-		{name: "Upload Successful", uploader: createUploaderWithSuccess(), want: "success", wantErr: false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := uploadWithRetry(tt.uploader)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("uploadWithRetry() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("uploadWithRetry() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func Test_uploadSuccessful(t *testing.T) {
 	uploader := createUploaderWithSuccess()
 
