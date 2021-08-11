@@ -59,7 +59,7 @@ workflows:
       - path::./:
           inputs:
             - connection: automatic
-            - altool_options: "--output-format xml --verbose"
+            - altool_options: "--output-format xml"
 
   test-apple-id-connection-auth:
     title: Test Apple ID connection authentication
@@ -69,7 +69,7 @@ workflows:
       - path::./:
           inputs:
             - connection: apple_id
-            - altool_options: "--output-format xml --verbose"
+            - altool_options: "--output-format xml"
 
   test-api-key-input-auth:
     title: Test API key Step Input authentication
@@ -81,7 +81,7 @@ workflows:
             - connection: "off"
             - api_key_path: $API_KEY_PATH
             - api_issuer: $API_KEY_ISSUER
-            - altool_options: "--output-format xml --verbose"
+            - altool_options: "--output-format xml"
 
   test-apple-id-input-auth:
     title: Test Apple ID Step Input authentication
@@ -93,7 +93,7 @@ workflows:
             - connection: "off"
             - itunescon_user: $APPLE_ID
             - app_password: $APP_SPECIFIC_PASSWORD
-            - altool_options: "--output-format xml --verbose"
+            - altool_options: "--output-format xml"
 
   prepare-test:
     title: Prepare test
