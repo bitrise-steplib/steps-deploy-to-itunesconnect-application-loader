@@ -2,12 +2,13 @@ package main
 
 import (
 	"errors"
-	"github.com/avast/retry-go/v3"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/avast/retry-go/v3"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/bitrise-io/go-utils/pathutil"
 )
@@ -25,6 +26,20 @@ Request ID: MQ4DVCDRVZ4VS33A66KIKKP6SQ.0.0
 *** Error: Errors uploading '/Users/vagrant/deploy/bitrise.ipa': (
     "Error Domain=NSCocoaErrorDomain Code=-1011 \"Authentication failed\" UserInfo={NSLocalizedDescription=Authentication failed, NSLocalizedFailureReason=Failed to authenticate for session: (\n    \"Error Domain=ITunesConnectionAuthenticationErrorDomain Code=-26000 \\\"The server returned an invalid response. This may indicate that a network proxy is interfering with communication, or that Apple servers are having issues. Please try your request again later.\\\" UserInfo={NSLocalizedRecoverySuggestion=The server returned an invalid response. This may indicate that a network proxy is interfering with communication, or that Apple servers are having issues. Please try your request again later., NSLocalizedDescription=The server returned an invalid response. This may indicate that a network proxy is interfering with communication, or that Apple servers are having issues. Please try your request again later., NSLocalizedFailureReason=App Store operation failed.}\"\n)}"
 )`
+
+const undefinedSoftwareType = `{
+    EnableJWTForAllCalls = 0;
+    ErrorCode = 1194;
+    ErrorMessage = "Unable to determine app platform for 'Undefined' software type. (1194)";
+    Errors =     (
+        "Unable to determine app platform for 'Undefined' software type. (1194)"
+    );
+    RestartClient = 0;
+    ShouldUseRESTAPIs = 0;
+    Success = 0;
+}
+Non-localized server string received: 'Unable to determine app platform for 'Undefined' software type.'.
+Non-localized server string received: 'Unable to determine app platform for 'Undefined' software type. (1194)'.`
 
 func Test_getKeyPath(t *testing.T) {
 	tmpPath, err := pathutil.NormalizedOSTempDirPath("testing")
@@ -137,7 +152,15 @@ func Test_uploadRecoversAfterErrorOnValidResponse(t *testing.T) {
 	uploader.AssertNumberOfCalls(t, "upload", 4)
 }
 
+func Test_uploadRecoversAfterUndefinedSoftwareType(t *testing.T) {
+	uploader := createUploaderWithUndefinedSoftwareType()
 
+	result, err := uploadWithRetry(uploader, retry.Delay(0))
+
+	assert.NoError(t, err)
+	assert.Equal(t, result, "success")
+	uploader.AssertNumberOfCalls(t, "upload", 2)
+}
 
 func createUploaderWithUnknownError() (uploader *mockUploader) {
 	uploader = new(mockUploader)
@@ -154,6 +177,13 @@ func createUploaderWithUnableToDetermineError() (uploader *mockUploader) {
 func createUploaderWithTransporterService() (uploader *mockUploader) {
 	uploader = new(mockUploader)
 	uploader.On("upload").Return("", transporterService, errors.New("test-error"))
+	return
+}
+
+func createUploaderWithUndefinedSoftwareType() (uploader *mockUploader) {
+	uploader = new(mockUploader)
+	uploader.On("upload").Return("", undefinedSoftwareType, errors.New("test-error")).Once()
+	uploader.On("upload").Return("success", "", nil)
 	return
 }
 

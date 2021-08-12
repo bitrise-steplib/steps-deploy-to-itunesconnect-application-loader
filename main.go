@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/avast/retry-go/v3"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -11,11 +10,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/avast/retry-go/v3"
 	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
+	httpretry "github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/devportalservice"
@@ -241,7 +242,7 @@ func main() {
 
 	var devportalConnectionProvider *devportalservice.BitriseClient
 	if cfg.BuildURL != "" && cfg.BuildAPIToken != "" {
-		devportalConnectionProvider = devportalservice.NewBitriseClient(http.DefaultClient, cfg.BuildURL, string(cfg.BuildAPIToken))
+		devportalConnectionProvider = devportalservice.NewBitriseClient(httpretry.NewHTTPClient().StandardClient(), cfg.BuildURL, string(cfg.BuildAPIToken))
 	} else {
 		fmt.Println()
 		log.Warnf("Connected Apple Developer Portal Account not found. Step is not running on bitrise.io: BITRISE_BUILD_URL and BITRISE_BUILD_API_TOKEN envs are not set")
@@ -373,6 +374,7 @@ func uploadWithRetry(uploader uploader, opts ...retry.Option) (string, error) {
 	var regexList = []string{
 		// https://bitrise.atlassian.net/browse/STEP-1190
 		`(?s).*Unable to determine the application using bundleId.*-19201.*`,
+		`(?s).*Unable to determine app platform for 'Undefined' software type.*1194.*`,
 		`(?s).*TransporterService.*error occurred trying to read the bundle.*-18000.*`,
 		`(?s).*server returned an invalid response.*try your request again.*`,
 	}
