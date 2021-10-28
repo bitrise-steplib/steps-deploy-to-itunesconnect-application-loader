@@ -376,7 +376,9 @@ func uploadWithRetry(uploader uploader, opts ...retry.Option) (string, error) {
 		`(?s).*Unable to determine the application using bundleId.*-19201.*`,
 		`(?s).*Unable to determine app platform for 'Undefined' software type.*1194.*`,
 		`(?s).*TransporterService.*error occurred trying to read the bundle.*-18000.*`,
+		`(?s).*Unable to authenticate.*-19209.*`,
 		`(?s).*server returned an invalid response.*try your request again.*`,
+		`(?s).*The request timed out.*`,
 	}
 	var result string
 	attempts := uint(10)

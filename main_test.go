@@ -27,6 +27,16 @@ Request ID: MQ4DVCDRVZ4VS33A66KIKKP6SQ.0.0
     "Error Domain=NSCocoaErrorDomain Code=-1011 \"Authentication failed\" UserInfo={NSLocalizedDescription=Authentication failed, NSLocalizedFailureReason=Failed to authenticate for session: (\n    \"Error Domain=ITunesConnectionAuthenticationErrorDomain Code=-26000 \\\"The server returned an invalid response. This may indicate that a network proxy is interfering with communication, or that Apple servers are having issues. Please try your request again later.\\\" UserInfo={NSLocalizedRecoverySuggestion=The server returned an invalid response. This may indicate that a network proxy is interfering with communication, or that Apple servers are having issues. Please try your request again later., NSLocalizedDescription=The server returned an invalid response. This may indicate that a network proxy is interfering with communication, or that Apple servers are having issues. Please try your request again later., NSLocalizedFailureReason=App Store operation failed.}\"\n)}"
 )`
 
+const unableToAuthenticate = `*** status code 401, auth issue.
+*** Error: Error uploading '/Users/vagrant/deploy/test.ipa'.
+*** Error: Unable to authenticate. (-19209)`
+
+const requestTimedOut = `*** Error: *** uploadSwinfoFile: Error Domain=NSURLErrorDomain Code=-1001 "The request timed out." UserInfo={_kCFStreamErrorCodeKey=-2102, NSUnderlyingError=0x7fed0ae6c4d0 {Error Domain=kCFErrorDomainCFNetwork Code=-1001 "(null)" UserInfo={_kCFStreamErrorCodeKey=-2102, _kCFStreamErrorDomainKey=4}}, _NSURLErrorFailingURLSessionTaskErrorKey=LocalDataTask <EE5A1EC3-DA3E-40D5-BDA4-46A1E6F1C130>.<1>, _NSURLErrorRelatedURLSessionTaskErrorKey=(
+    "LocalDataTask <EE5A1EC3-DA3E-40D5-BDA4-46A1E6F1C130>.<1>"
+), NSLocalizedDescription=The request timed out., NSErrorFailingURLStringKey=https://contentdelivery.itunes.apple.com/MZContentDeliveryService/iris/v1/buildDeliveryFiles/16360b92-b0c7-4944-8b60-8751991f0396, NSErrorFailingURLKey=https://contentdelivery.itunes.apple.com/MZContentDeliveryService/iris/v1/buildDeliveryFiles/16360b92-b0c7-4944-8b60-8751991f0396, _kCFStreamErrorDomainKey=4}
+*** Error: Error uploading '/Users/vagrant/deploy/test.ipa'.
+*** Error: The request timed out. (-1001)`
+
 const undefinedSoftwareType = `{
     EnableJWTForAllCalls = 0;
     ErrorCode = 1194;
@@ -142,6 +152,24 @@ func Test_uploadRetriesOnInvalidResponse(t *testing.T) {
 	uploader.AssertNumberOfCalls(t, "upload", 10)
 }
 
+func Test_uploadRetriesOnUnableToAuthenticateResponse(t *testing.T) {
+	uploader := createUploaderWithUnableToAuthenticateResponse()
+
+	_, err := uploadWithRetry(uploader, retry.Delay(0))
+
+	assert.Error(t, err)
+	uploader.AssertNumberOfCalls(t, "upload", 10)
+}
+
+func Test_uploadRetriesOnRequestTimedOutResponse(t *testing.T) {
+	uploader := createUploaderWithRequestTimedOutResponse()
+
+	_, err := uploadWithRetry(uploader, retry.Delay(0))
+
+	assert.Error(t, err)
+	uploader.AssertNumberOfCalls(t, "upload", 10)
+}
+
 func Test_uploadRecoversAfterErrorOnValidResponse(t *testing.T) {
 	uploader := createUploaderWithFailingAndRecoveringResponse()
 
@@ -149,7 +177,7 @@ func Test_uploadRecoversAfterErrorOnValidResponse(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, result, "success")
-	uploader.AssertNumberOfCalls(t, "upload", 4)
+	uploader.AssertNumberOfCalls(t, "upload", 6)
 }
 
 func Test_uploadRecoversAfterUndefinedSoftwareType(t *testing.T) {
@@ -193,11 +221,25 @@ func createUploaderWithInvalidResponse() (uploader *mockUploader) {
 	return
 }
 
+func createUploaderWithUnableToAuthenticateResponse() (uploader *mockUploader) {
+	uploader = new(mockUploader)
+	uploader.On("upload").Return("", unableToAuthenticate, errors.New("test-error"))
+	return
+}
+
+func createUploaderWithRequestTimedOutResponse() (uploader *mockUploader) {
+	uploader = new(mockUploader)
+	uploader.On("upload").Return("", requestTimedOut, errors.New("test-error"))
+	return
+}
+
 func createUploaderWithFailingAndRecoveringResponse() (uploader *mockUploader) {
 	uploader = new(mockUploader)
 	uploader.On("upload").Return("", unableToDetermine, errors.New("test-error")).Once()
 	uploader.On("upload").Return("", transporterService, errors.New("test-error")).Once()
 	uploader.On("upload").Return("", invalidResponse, errors.New("test-error")).Once()
+	uploader.On("upload").Return("", requestTimedOut, errors.New("test-error")).Once()
+	uploader.On("upload").Return("", unableToAuthenticate, errors.New("test-error")).Once()
 	uploader.On("upload").Return("success", "", nil)
 	return
 }
