@@ -148,9 +148,9 @@ workflows:
       - xcode-archive:
           title: Create Archive
           inputs:
+            - distribution_method: $DISTRIBUTION
             - project_path: $BITRISE_PROJECT_PATH
             - scheme: $BITRISE_SCHEME
-            - export_method: $DISTRIBUTION
 
   dep-update:
     title: Update Go dependencies
