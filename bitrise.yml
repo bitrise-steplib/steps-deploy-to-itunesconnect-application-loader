@@ -25,6 +25,11 @@ workflows:
     after_run:
       - test
 
+  generate_readme:
+    steps:
+    - git::https://github.com/bitrise-steplib/steps-readme-generator.git@main:
+        title: Generate README
+
   audit-this-step:
     title: Audit step.yml
     steps:

@@ -1,7 +1,7 @@
-title: Deploy to iTunes Connect - Application Loader
-summary: Uploads binaries (.ipa / .pkg files) to [iTunes Connect](https://itunesconnect.apple.com/).
+title: Deploy to App Store Connect - Application Loader (formerly iTunes Connect)
+summary: Uploads binaries (.ipa / .pkg files) to [App Store Connect](https://appstoreconnect.apple.com/).
 description: |-
-  Upload your binaries to [iTunes Connect](https://itunesconnect.apple.com/) using Apple's Application Loader. You can upload iOS, macOS, or Apple TV apps with the Step. The Step does not upload metadata, screenshots, nor does it submit your app for review. For that, use the **Deploy to iTunesConnect** Step.
+  Upload your binaries to [App Store Connect](https://appstoreconnect.apple.com/) using Apple's Application Loader. You can upload iOS, macOS, or Apple TV apps with the Step. The Step does not upload metadata, screenshots, nor does it submit your app for review. For that, use the **Deploy to App Store Connect with Deliver** Step.
 
   This Step, however, does NOT build your binary: to create an IPA or PKG file, you need the right version of the **Xcode Archive** Step, or any other Step that is capable of building a binary file.  
 
