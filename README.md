@@ -1,4 +1,4 @@
-# Deploy to App Store Connect - Application Loader
+# Deploy to App Store Connect - Application Loader (formerly iTunes Connect)
 
 [![Step changelog](https://shields.io/github/v/release/bitrise-steplib/steps-deploy-to-itunesconnect-application-loader?include_prereleases&label=changelog&color=blueviolet)](https://github.com/bitrise-steplib/steps-deploy-to-itunesconnect-application-loader/releases)
 
