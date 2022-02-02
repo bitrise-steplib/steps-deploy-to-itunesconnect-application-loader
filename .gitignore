@@ -2,3 +2,5 @@
 .bitrise*
 _tmp
 *.p8
+steps-deploy-to-itunesconnect-application-loader
+.DS_Store
