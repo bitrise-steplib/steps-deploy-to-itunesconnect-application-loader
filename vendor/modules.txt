@@ -1,11 +1,11 @@
 # github.com/avast/retry-go/v3 v3.1.1
 ## explicit
 github.com/avast/retry-go/v3
-# github.com/bitrise-io/go-steputils v0.0.0-20210527075147-910ce7a105a1
+# github.com/bitrise-io/go-steputils v1.0.1
 ## explicit
 github.com/bitrise-io/go-steputils/input
 github.com/bitrise-io/go-steputils/stepconf
-# github.com/bitrise-io/go-utils v0.0.0-20210713111255-08be784d45d0
+# github.com/bitrise-io/go-utils v1.0.1
 ## explicit
 github.com/bitrise-io/go-utils/colorstring
 github.com/bitrise-io/go-utils/command
@@ -18,7 +18,7 @@ github.com/bitrise-io/go-utils/pointers
 github.com/bitrise-io/go-utils/retry
 github.com/bitrise-io/go-utils/sliceutil
 github.com/bitrise-io/go-utils/ziputil
-# github.com/bitrise-io/go-xcode v0.0.0-20210714144817-465637d28b74
+# github.com/bitrise-io/go-xcode v1.0.2
 ## explicit
 github.com/bitrise-io/go-xcode/appleauth
 github.com/bitrise-io/go-xcode/devportalservice
@@ -47,5 +47,5 @@ github.com/stretchr/testify/assert
 github.com/stretchr/testify/mock
 # gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 gopkg.in/yaml.v3
-# howett.net/plist v0.0.0-20201203080718-1454fab16a06
+# howett.net/plist v1.0.0
 howett.net/plist
