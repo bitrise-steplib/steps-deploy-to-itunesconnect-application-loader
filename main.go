@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -40,6 +41,7 @@ type Config struct {
 	Platform          string `env:"platform,opt[auto,ios,macos,tvos]"`
 	ItunesConnectUser string `env:"itunescon_user"`
 	AdditionalParams  string `env:"altool_options"`
+	RetryTimes        string `env:"retries"`
 
 	// Used to get Bitrise Apple Developer Portal Connection
 	BuildURL      string          `env:"BITRISE_BUILD_URL"`
@@ -306,7 +308,7 @@ func main() {
 	altoolParams := append([]string{"altool"}, uploadParams...)
 	altoolParams = append(altoolParams, authParams...)
 	altoolParams = append(altoolParams, additionalParams...)
-	out, err := uploadWithRetry(newAltoolUploader(altoolParams, filePth, authConfig))
+	out, err := uploadWithRetry(newAltoolUploader(altoolParams, filePth, authConfig), cfg.RetryTimes)
 	if err != nil {
 		failf("Uploading IPA failed: %s", err)
 	}
@@ -370,7 +372,7 @@ func (a altoolUploader) upload() (string, string, error) {
 	return ioString, errorString, nil
 }
 
-func uploadWithRetry(uploader uploader, opts ...retry.Option) (string, error) {
+func uploadWithRetry(uploader uploader, retryTimes string, opts ...retry.Option) (string, error) {
 	var regexList = []string{
 		// https://bitrise.atlassian.net/browse/STEP-1190
 		`(?s).*Unable to determine the application using bundleId.*-19201.*`,
@@ -381,7 +383,11 @@ func uploadWithRetry(uploader uploader, opts ...retry.Option) (string, error) {
 		`(?s).*The request timed out.*`,
 	}
 	var result string
-	attempts := uint(10)
+	parsedRetryTimes, err := strconv.ParseInt(retryTimes, 10, 32)
+	attempts := uint(parsedRetryTimes)
+	if err != nil {
+		attempts = uint(10)
+	}
 	mOpts := []retry.Option{
 		retry.Attempts(attempts),
 		retry.Delay(300 * time.Millisecond),

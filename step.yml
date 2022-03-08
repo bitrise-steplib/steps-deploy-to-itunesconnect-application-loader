@@ -141,6 +141,11 @@ inputs:
       - "ios"
       - "macos"
       - "tvos"
+  - retries: "10"
+    opts:
+      title: "Retry times"
+      description: |-
+        Retry times when failed, set to `0` for infinite retry
   - altool_options:
     opts:
       category: Debug

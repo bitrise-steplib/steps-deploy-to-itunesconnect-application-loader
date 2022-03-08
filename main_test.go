@@ -109,7 +109,7 @@ func Test_getKeyPath(t *testing.T) {
 func Test_uploadSuccessful(t *testing.T) {
 	uploader := createUploaderWithSuccess()
 
-	result, err := uploadWithRetry(uploader)
+	result, err := uploadWithRetry(uploader, "10")
 
 	assert.NoError(t, err)
 	assert.Equal(t, result, "success")
@@ -119,7 +119,7 @@ func Test_uploadSuccessful(t *testing.T) {
 func Test_uploadFailsWithUnknownError(t *testing.T) {
 	uploader := createUploaderWithUnknownError()
 
-	_, err := uploadWithRetry(uploader)
+	_, err := uploadWithRetry(uploader, "10")
 
 	assert.Error(t, err)
 	uploader.AssertNumberOfCalls(t, "upload", 1)
@@ -128,7 +128,7 @@ func Test_uploadFailsWithUnknownError(t *testing.T) {
 func Test_uploadRetriesOnUnableToDetermine(t *testing.T) {
 	uploader := createUploaderWithUnableToDetermineError()
 
-	_, err := uploadWithRetry(uploader, retry.Delay(0))
+	_, err := uploadWithRetry(uploader, "10", retry.Delay(0))
 
 	assert.Error(t, err)
 	uploader.AssertNumberOfCalls(t, "upload", 10)
@@ -137,7 +137,7 @@ func Test_uploadRetriesOnUnableToDetermine(t *testing.T) {
 func Test_uploadRetriesOnTransporterService(t *testing.T) {
 	uploader := createUploaderWithTransporterService()
 
-	_, err := uploadWithRetry(uploader, retry.Delay(0))
+	_, err := uploadWithRetry(uploader, "10", retry.Delay(0))
 
 	assert.Error(t, err)
 	uploader.AssertNumberOfCalls(t, "upload", 10)
@@ -146,7 +146,7 @@ func Test_uploadRetriesOnTransporterService(t *testing.T) {
 func Test_uploadRetriesOnInvalidResponse(t *testing.T) {
 	uploader := createUploaderWithInvalidResponse()
 
-	_, err := uploadWithRetry(uploader, retry.Delay(0))
+	_, err := uploadWithRetry(uploader, "10", retry.Delay(0))
 
 	assert.Error(t, err)
 	uploader.AssertNumberOfCalls(t, "upload", 10)
@@ -155,7 +155,25 @@ func Test_uploadRetriesOnInvalidResponse(t *testing.T) {
 func Test_uploadRetriesOnUnableToAuthenticateResponse(t *testing.T) {
 	uploader := createUploaderWithUnableToAuthenticateResponse()
 
-	_, err := uploadWithRetry(uploader, retry.Delay(0))
+	_, err := uploadWithRetry(uploader, "10", retry.Delay(0))
+
+	assert.Error(t, err)
+	uploader.AssertNumberOfCalls(t, "upload", 10)
+}
+
+func Test_uploadRetriesSpecificTimes(t *testing.T) {
+	uploader := createUploaderWithUnableToAuthenticateResponse()
+
+	_, err := uploadWithRetry(uploader, "5", retry.Delay(0))
+
+	assert.Error(t, err)
+	uploader.AssertNumberOfCalls(t, "upload", 5)
+}
+
+func Test_uploadRetriesDefaultTimes(t *testing.T) {
+	uploader := createUploaderWithUnableToAuthenticateResponse()
+
+	_, err := uploadWithRetry(uploader, "", retry.Delay(0))
 
 	assert.Error(t, err)
 	uploader.AssertNumberOfCalls(t, "upload", 10)
@@ -164,7 +182,7 @@ func Test_uploadRetriesOnUnableToAuthenticateResponse(t *testing.T) {
 func Test_uploadRetriesOnRequestTimedOutResponse(t *testing.T) {
 	uploader := createUploaderWithRequestTimedOutResponse()
 
-	_, err := uploadWithRetry(uploader, retry.Delay(0))
+	_, err := uploadWithRetry(uploader, "10", retry.Delay(0))
 
 	assert.Error(t, err)
 	uploader.AssertNumberOfCalls(t, "upload", 10)
@@ -173,7 +191,7 @@ func Test_uploadRetriesOnRequestTimedOutResponse(t *testing.T) {
 func Test_uploadRecoversAfterErrorOnValidResponse(t *testing.T) {
 	uploader := createUploaderWithFailingAndRecoveringResponse()
 
-	result, err := uploadWithRetry(uploader, retry.Delay(0))
+	result, err := uploadWithRetry(uploader, "10", retry.Delay(0))
 
 	assert.NoError(t, err)
 	assert.Equal(t, result, "success")
@@ -183,7 +201,7 @@ func Test_uploadRecoversAfterErrorOnValidResponse(t *testing.T) {
 func Test_uploadRecoversAfterUndefinedSoftwareType(t *testing.T) {
 	uploader := createUploaderWithUndefinedSoftwareType()
 
-	result, err := uploadWithRetry(uploader, retry.Delay(0))
+	result, err := uploadWithRetry(uploader, "10", retry.Delay(0))
 
 	assert.NoError(t, err)
 	assert.Equal(t, result, "success")
