@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/avast/retry-go/v3"
+	"github.com/avast/retry-go/v4"
 	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/fileutil"
@@ -401,7 +401,7 @@ func uploadWithRetry(uploader uploader, opts ...retry.Option) (string, error) {
 		mOpts = append(mOpts, opt)
 	}
 
-	err := retry.Do(
+	err = retry.Do(
 		func() error {
 			r, errorString, err := uploader.upload()
 			if err != nil {
