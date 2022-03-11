@@ -34,6 +34,8 @@ type Config struct {
 // Option represents an option for retry.
 type Option func(*Config)
 
+func emptyOption(c *Config) {}
+
 // return the direct last error that came from the retried function
 // default is false (return wrapped errors with everything)
 func LastErrorOnly(lastErrorOnly bool) Option {
@@ -42,7 +44,7 @@ func LastErrorOnly(lastErrorOnly bool) Option {
 	}
 }
 
-// Attempts set count of retry
+// Attempts set count of retry. Setting to 0 will retry until the retried function succeeds.
 // default is 10
 func Attempts(attempts uint) Option {
 	return func(c *Config) {
@@ -76,6 +78,9 @@ func MaxJitter(maxJitter time.Duration) Option {
 // DelayType set type of the delay between retries
 // default is BackOff
 func DelayType(delayType DelayTypeFunc) Option {
+	if delayType == nil {
+		return emptyOption
+	}
 	return func(c *Config) {
 		c.delayType = delayType
 	}
@@ -141,6 +146,9 @@ func CombineDelay(delays ...DelayTypeFunc) DelayTypeFunc {
 //		}),
 //	)
 func OnRetry(onRetry OnRetryFunc) Option {
+	if onRetry == nil {
+		return emptyOption
+	}
 	return func(c *Config) {
 		c.onRetry = onRetry
 	}
@@ -172,6 +180,9 @@ func OnRetry(onRetry OnRetryFunc) Option {
 //		}
 //	)
 func RetryIf(retryIf RetryIfFunc) Option {
+	if retryIf == nil {
+		return emptyOption
+	}
 	return func(c *Config) {
 		c.retryIf = retryIf
 	}

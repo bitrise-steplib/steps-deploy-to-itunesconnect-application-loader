@@ -72,6 +72,7 @@ You can also run this step directly with [Bitrise CLI](https://github.com/bitris
 | `pkg_path` | Path to your PKG file to be deployed. **NOTE:** This input or `IPA path` is required. |  | `$BITRISE_PKG_PATH` |
 | `platform` | Specify the platform of the file. When `auto` is selected the step uses the `Info.plist` to set the platform. |  | `auto` |
 | `altool_options` | Options added to the end of the `altool` call. You can use multiple options, separated by a space character. Example: `--notarize-app --asc-provider" <<provider_id>>` |  |  |
+| `retries` | Retry times when failed, set to `0` for infinite retries |  | `10` |
 </details>
 
 <details>

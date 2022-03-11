@@ -46,25 +46,17 @@ SEE ALSO
 
 BREAKING CHANGES
 
-3.0.0
-
-* `DelayTypeFunc` accepts a new parameter `err` - this breaking change affects only your custom Delay Functions. This change allow [make delay functions based on error](examples/delay_based_on_error_test.go).
-
-
-1.0.2 -> 2.0.0
-
-* argument of `retry.Delay` is final delay (no multiplication by `retry.Units` anymore)
-
-* function `retry.Units` are removed
-
-* [more about this breaking change](https://github.com/avast/retry-go/issues/7)
-
-
-0.3.0 -> 1.0.0
-
-* `retry.Retry` function are changed to `retry.Do` function
-
-* `retry.RetryCustom` (OnRetry) and `retry.RetryCustomWithOpts` functions are now implement via functions produces Options (aka `retry.OnRetry`)
+* 4.0.0
+	* infinity retry is possible by set `Attempts(0)` by PR [#49](https://github.com/avast/retry-go/pull/49)
+* 3.0.0
+	* `DelayTypeFunc` accepts a new parameter `err` - this breaking change affects only your custom Delay Functions. This change allow [make delay functions based on error](examples/delay_based_on_error_test.go).
+* 1.0.2 -> 2.0.0
+	* argument of `retry.Delay` is final delay (no multiplication by `retry.Units` anymore)
+	* function `retry.Units` are removed
+	* [more about this breaking change](https://github.com/avast/retry-go/issues/7)
+* 0.3.0 -> 1.0.0
+	* `retry.Retry` function are changed to `retry.Do` function
+	* `retry.RetryCustom` (OnRetry) and `retry.RetryCustomWithOpts` functions are now implement via functions produces Options (aka `retry.OnRetry`)
 
 
 */
@@ -83,16 +75,26 @@ type RetryableFunc func() error
 func Do(retryableFunc RetryableFunc, opts ...Option) error {
 	var n uint
 
-	//default
+	// default
 	config := newDefaultRetryConfig()
 
-	//apply opts
+	// apply opts
 	for _, opt := range opts {
 		opt(config)
 	}
 
 	if err := config.context.Err(); err != nil {
 		return err
+	}
+
+	// Setting attempts to 0 means we'll retry until we succeed
+	if config.attempts == 0 {
+		for err := retryableFunc(); err != nil; err = retryableFunc() {
+			n++
+			<-time.After(delay(config, n, err))
+		}
+
+		return nil
 	}
 
 	var errorLog Error
@@ -120,15 +122,14 @@ func Do(retryableFunc RetryableFunc, opts ...Option) error {
 				break
 			}
 
-			delayTime := config.delayType(n, err, config)
-			if config.maxDelay > 0 && delayTime > config.maxDelay {
-				delayTime = config.maxDelay
-			}
-
 			select {
-			case <-time.After(delayTime):
+			case <-time.After(delay(config, n, err)):
 			case <-config.context.Done():
-				return config.context.Err()
+				if config.lastErrorOnly {
+					return config.context.Err()
+				}
+				errorLog[n] = config.context.Err()
+				return errorLog
 			}
 
 		} else {
@@ -215,4 +216,13 @@ func unpackUnrecoverable(err error) error {
 	}
 
 	return err
+}
+
+func delay(config *Config, n uint, err error) time.Duration {
+	delayTime := config.delayType(n, err, config)
+	if config.maxDelay > 0 && delayTime > config.maxDelay {
+		delayTime = config.maxDelay
+	}
+
+	return delayTime
 }
