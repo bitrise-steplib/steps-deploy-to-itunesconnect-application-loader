@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -19,6 +20,7 @@ import (
 	"github.com/bitrise-io/go-utils/pathutil"
 	httpretry "github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/sliceutil"
+	"github.com/bitrise-io/go-utils/v1/errorutil"
 	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-io/go-xcode/ipa"
@@ -313,10 +315,6 @@ func main() {
 		failf("Uploading IPA failed: %s", err)
 	}
 
-	if matches := regexp.MustCompile(`(?i)Generated JWT: (.*)`).FindStringSubmatch(out); len(matches) == 2 {
-		out = strings.Replace(out, matches[1], "[REDACTED]", -1)
-	}
-
 	fmt.Println(out)
 
 	log.Donef("IPA uploaded")
@@ -341,7 +339,7 @@ func (a altoolUploader) upload() (string, string, error) {
 	var sb bytes.Buffer
 	var eb bytes.Buffer
 	cmd.SetStdout(&sb)
-	cmd.SetStderr(&eb)
+	cmd.SetStderr(io.MultiWriter(&eb, &sb))
 
 	fileName := filepath.Base(a.filePth)
 	log.Infof("Uploading - %s ...", fileName)
@@ -359,17 +357,25 @@ func (a altoolUploader) upload() (string, string, error) {
 	log.Printf("$ %s", commandStr)
 
 	err := cmd.Run()
-	ioString := sb.String()
-	errorString := eb.String()
-	if errorString != "" {
-		log.Errorf("%s", errorString)
+	combinedOutput := sb.String()
+	errorOutput := eb.String()
+	if errorOutput != "" {
+		log.Errorf("%s", errorOutput)
+	}
+
+	if matches := regexp.MustCompile(`(?i)Generated JWT: (.*)`).FindStringSubmatch(combinedOutput); len(matches) == 2 {
+		combinedOutput = strings.Replace(combinedOutput, matches[1], "[REDACTED]", -1)
 	}
 
 	if err != nil {
-		return ioString, errorString, err
+		if errorutil.IsExitStatusError(err) {
+			return combinedOutput, errorOutput, fmt.Errorf("xcrun command failed, output: %s", combinedOutput)
+		}
+
+		return combinedOutput, errorOutput, fmt.Errorf("command execution failed: %w", err)
 	}
 
-	return ioString, errorString, nil
+	return combinedOutput, errorOutput, nil
 }
 
 func uploadWithRetry(uploader uploader, retryTimes string, opts ...retry.Option) (string, error) {
