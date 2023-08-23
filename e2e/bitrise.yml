@@ -24,30 +24,30 @@ app:
 #  - APP_SPECIFIC_PASSWORD: $APP_SPECIFIC_PASSWORD
 
 workflows:
-  test-api-key-connection-auth:
+  test_api_key_connection_auth:
     title: Test API key connection authentication
     before_run:
-    - prepare-test
+    - _prepare_test
     steps:
     - path::./:
         inputs:
         - connection: automatic
         - altool_options: --output-format xml
 
-  test-apple-id-connection-auth:
+  test_apple_id_connection_auth:
     title: Test Apple ID connection authentication
     before_run:
-    - prepare-test
+    - _prepare_test
     steps:
     - path::./:
         inputs:
         - connection: apple_id
         - altool_options: --output-format xml
 
-  test-api-key-input-auth:
+  test_api_key_input_auth:
     title: Test API key Step Input authentication
     before_run:
-    - prepare-test
+    - _prepare_test
     steps:
     - path::./:
         inputs:
@@ -56,10 +56,10 @@ workflows:
         - api_issuer: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
         - altool_options: --output-format xml
 
-#  test-apple-id-input-auth:
+#  test_apple_id_input_auth:
 #    title: Test Apple ID Step Input authentication
 #    before_run:
-#    - prepare-test
+#    - _prepare_test
 #    steps:
 #    - path::./:
 #        inputs:
@@ -68,7 +68,7 @@ workflows:
 #        - app_password: $APP_SPECIFIC_PASSWORD
 #        - altool_options: "--output-format xml"
 
-  prepare-test:
+  _prepare_test:
     title: Prepare test
     envs:
     - TMP_DIR: ./_tmp
