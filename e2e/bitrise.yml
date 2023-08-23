@@ -1,0 +1,127 @@
+format_version: "13"
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+
+app:
+  envs:
+  # Test project
+  - TEST_PROJECT_URL: https://github.com/bitrise-samples/Application-Loader-Test.git
+  - TEST_PROJECT_BRANCH: master
+  - INFO_PLIST_PATH: ./Application Loader Test/Info.plist
+  - BITRISE_PROJECT_PATH: ./Application Loader Test.xcodeproj
+  - BITRISE_SCHEME: Application Loader Test
+  # Code signing
+#  - BITRISE_CERTIFICATE_URL: $BITRISE_CERTIFICATE_URL
+#  - BITRISE_CERTIFICATE_PASSPHRASE: $BITRISE_CERTIFICATE_PASSPHRASE
+  - BITRISE_KEYCHAIN_PASSWORD: $BITRISE_KEYCHAIN_PASSWORD
+  - BITFALL_APPLE_APPLE_CERTIFICATE_URL_LIST: $BITFALL_APPLE_APPLE_CERTIFICATE_URL_LIST
+  - BITFALL_APPLE_APPLE_CERTIFICATE_PASSPHRASE_LIST: $BITFALL_APPLE_APPLE_CERTIFICATE_PASSPHRASE_LIST
+  # App Store Connect Connection
+  - BITFALL_APPSTORECONNECT_API_KEY_URL: $BITFALL_APPSTORECONNECT_API_KEY_URL
+  - BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
+#  - API_KEY_PATH: $API_KEY_PATH
+#  - API_KEY_ISSUER: $API_KEY_ISSUER
+#  - APPLE_ID: $APPLE_ID
+#  - APP_SPECIFIC_PASSWORD: $APP_SPECIFIC_PASSWORD
+
+workflows:
+  test-api-key-connection-auth:
+    title: Test API key connection authentication
+    before_run:
+    - prepare-test
+    steps:
+    - path::./:
+        inputs:
+        - connection: automatic
+        - altool_options: --output-format xml
+
+  test-apple-id-connection-auth:
+    title: Test Apple ID connection authentication
+    before_run:
+    - prepare-test
+    steps:
+    - path::./:
+        inputs:
+        - connection: apple_id
+        - altool_options: --output-format xml
+
+  test-api-key-input-auth:
+    title: Test API key Step Input authentication
+    before_run:
+    - prepare-test
+    steps:
+    - path::./:
+        inputs:
+        - connection: "off"
+        - api_key_path: $BITFALL_APPSTORECONNECT_API_KEY_URL
+        - api_issuer: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
+        - altool_options: --output-format xml
+
+#  test-apple-id-input-auth:
+#    title: Test Apple ID Step Input authentication
+#    before_run:
+#    - prepare-test
+#    steps:
+#    - path::./:
+#        inputs:
+#        - connection: "off"
+#        - itunescon_user: $APPLE_ID
+#        - app_password: $APP_SPECIFIC_PASSWORD
+#        - altool_options: "--output-format xml"
+
+  prepare-test:
+    title: Prepare test
+    envs:
+    - TMP_DIR: ./_tmp
+    steps:
+    - script:
+        title: rm -rf ./_tmp
+        inputs:
+        - content: rm -rf $TMP_DIR
+    - change-workdir:
+        title: cd ./_tmp
+        run_if: true
+        inputs:
+        - path: $TMP_DIR
+        - is_create_path: true
+    - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git:
+        title: Clone test project
+        inputs:
+        - clone_into_dir: $BITRISE_SOURCE_DIR
+        - repository_url: $TEST_PROJECT_URL
+        - branch: $TEST_PROJECT_BRANCH
+    - manage-ios-code-signing:
+        inputs:
+        - distribution_method: app-store
+        - scheme: $BITRISE_SCHEME
+        - certificate_url_list: $BITFALL_APPLE_APPLE_CERTIFICATE_URL_LIST
+        - passphrase_list: $BITFALL_APPLE_APPLE_CERTIFICATE_PASSPHRASE_LIST
+        - keychain_path: $BITRISE_KEYCHAIN_PATH
+        - keychain_password: $BITRISE_KEYCHAIN_PASSWORD
+    - script:
+        title: Prepare Build Number
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            CURRENT_BUILD_NUMBER=${BITRISE_BUILD_NUMBER}
+            BITRISE_BUILD_NUMBER=$((($(gdate +%Y%m%d%H%M%S)-20000000000000)*10000))
+            if [[ -z "${BITRISE_BUILD_NUMBER}" ]]; then
+              echo "error: failed to calculated build number"
+              exit 1
+            fi
+            if [[ -n "${CURRENT_BUILD_NUMBER}" ]]; then
+              BITRISE_BUILD_NUMBER=$((${BITRISE_BUILD_NUMBER}+${CURRENT_BUILD_NUMBER}))
+            fi
+
+            envman add --key BUILD_NUMBER --value "${BITRISE_BUILD_NUMBER}"
+    - set-xcode-build-number:
+        title: Set Build Number
+        run_if: true
+        inputs:
+        - build_version: $BUILD_NUMBER
+        - plist_path: $INFO_PLIST_PATH
+    - xcode-archive:
+        title: Create Archive
+        inputs:
+        - distribution_method: app-store
+        - project_path: $BITRISE_PROJECT_PATH
+        - scheme: $BITRISE_SCHEME
