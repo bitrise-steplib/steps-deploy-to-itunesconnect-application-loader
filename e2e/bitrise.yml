@@ -9,6 +9,7 @@ app:
   - INFO_PLIST_PATH: ./Application Loader Test/Info.plist
   - BITRISE_PROJECT_PATH: ./Application Loader Test.xcodeproj
   - BITRISE_SCHEME: Application Loader Test
+  - BITRISE_KEYCHAIN_PATH: $HOME/Library/Keychains/login.keychain
   # Code signing
 #  - BITRISE_CERTIFICATE_URL: $BITRISE_CERTIFICATE_URL
 #  - BITRISE_CERTIFICATE_PASSPHRASE: $BITRISE_CERTIFICATE_PASSPHRASE
