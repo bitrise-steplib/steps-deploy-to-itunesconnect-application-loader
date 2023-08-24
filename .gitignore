@@ -4,3 +4,4 @@ _tmp
 *.p8
 steps-deploy-to-itunesconnect-application-loader
 .DS_Store
+README.md.backup
