@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -73,7 +72,7 @@ func Test_getKeyPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := ioutil.WriteFile(filepath.Join(tmpKeyPaths2[2], "AuthKey_MyGreatID.p8"), []byte("content"), 0777); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpKeyPaths2[2], "AuthKey_MyGreatID.p8"), []byte("content"), 0777); err != nil {
 		t.Fatal(err)
 	}
 

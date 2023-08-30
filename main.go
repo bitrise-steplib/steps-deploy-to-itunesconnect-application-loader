@@ -52,8 +52,8 @@ type platformType string
 
 const (
 	iOS   platformType = "ios"
-	tvOS               = "appletvos"
-	macOS              = "macos"
+	tvOS  platformType = "appletvos"
+	macOS platformType = "macos"
 )
 
 func (cfg Config) validateArtifact() error {
@@ -73,7 +73,9 @@ func (cfg Config) validateArtifact() error {
 }
 
 // getPlatformType maps platform to an altool parameter
-//  -t, --type {macos | ios | appletvos}     Specify the platform of the file, or of the host app when using --upload-hosted-content. (Output by 'xcrun altool -h')
+//
+//	-t, --type {macos | ios | appletvos}     Specify the platform of the file, or of the host app when using --upload-hosted-content. (Output by 'xcrun altool -h')
+//
 // if 'auto' is selected the 'DTPlatformName' is read from Info.plist
 func getPlatformType(ipaPath, platform string) platformType {
 	fallback := func() platformType {
@@ -403,9 +405,7 @@ func uploadWithRetry(uploader uploader, retryTimes string, opts ...retry.Option)
 		}),
 	}
 
-	for _, opt := range opts {
-		mOpts = append(mOpts, opt)
-	}
+	mOpts = append(mOpts, opts...)
 
 	err = retry.Do(
 		func() error {
