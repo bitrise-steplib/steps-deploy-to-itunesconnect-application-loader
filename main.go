@@ -38,7 +38,7 @@ type Config struct {
 
 	IpaPath           string `env:"ipa_path"`
 	PkgPath           string `env:"pkg_path"`
-	Platform          string `env:"platform,opt[auto,ios,macos,tvos]"`
+	Platform          string `env:"platform,opt[auto,ios,macos,tvos,visionos]"`
 	ItunesConnectUser string `env:"itunescon_user"`
 	AdditionalParams  string `env:"altool_options"`
 	RetryTimes        string `env:"retries"`

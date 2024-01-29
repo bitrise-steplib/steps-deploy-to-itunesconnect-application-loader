@@ -139,6 +139,7 @@ inputs:
     - ios
     - macos
     - tvos
+    - visionos
 - retries: "10"
   opts:
     title: Retry times
