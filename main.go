@@ -108,7 +108,7 @@ func getPlatformType(ipaPath, platform string) platformType {
 			return macOS
 		case "iphoneos", "iphonesimulator", "watchos", "watchsimulator":
 			return iOS
-		case "xros", "xrossimulator":
+		case "xros", "xrsimulator":
 			return visionOS
 		default:
 			return fallback()
