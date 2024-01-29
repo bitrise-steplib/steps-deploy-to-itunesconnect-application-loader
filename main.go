@@ -38,7 +38,7 @@ type Config struct {
 
 	IpaPath           string `env:"ipa_path"`
 	PkgPath           string `env:"pkg_path"`
-	Platform          string `env:"platform,opt[auto,ios,macos,tvos]"`
+	Platform          string `env:"platform,opt[auto,ios,macos,tvos,visionos]"`
 	ItunesConnectUser string `env:"itunescon_user"`
 	AdditionalParams  string `env:"altool_options"`
 	RetryTimes        string `env:"retries"`
@@ -51,9 +51,10 @@ type Config struct {
 type platformType string
 
 const (
-	iOS   platformType = "ios"
-	tvOS  platformType = "appletvos"
-	macOS platformType = "macos"
+	iOS      platformType = "ios"
+	tvOS     platformType = "appletvos"
+	macOS    platformType = "macos"
+	visionOS platformType = "visionos"
 )
 
 func (cfg Config) validateArtifact() error {
@@ -107,6 +108,8 @@ func getPlatformType(ipaPath, platform string) platformType {
 			return macOS
 		case "iphoneos", "iphonesimulator", "watchos", "watchsimulator":
 			return iOS
+		case "xros", "xrsimulator":
+			return visionOS
 		default:
 			return fallback()
 		}
@@ -116,6 +119,8 @@ func getPlatformType(ipaPath, platform string) platformType {
 		return macOS
 	case "tvos":
 		return tvOS
+	case "visionos":
+		return visionOS
 	default:
 		return fallback()
 	}
