@@ -312,11 +312,11 @@ func main() {
 	altoolParams = append(altoolParams, additionalParams...)
 	out, err := uploadWithRetry(newAltoolUploader(altoolParams, filePth, authConfig), cfg.RetryTimes)
 	if err != nil {
+		fmt.Println(out)
 		failf("Uploading IPA failed: %s", err)
 	}
 
 	fmt.Println(out)
-
 	log.Donef("IPA uploaded")
 }
 
@@ -369,7 +369,7 @@ func (a altoolUploader) upload() (string, string, error) {
 
 	if err != nil {
 		if errorutil.IsExitStatusError(err) {
-			return combinedOutput, errorOutput, fmt.Errorf("xcrun command failed, output: %s", combinedOutput)
+			return combinedOutput, errorOutput, fmt.Errorf("xcrun command failed: %w", err)
 		}
 
 		return combinedOutput, errorOutput, fmt.Errorf("command execution failed: %w", err)
@@ -416,6 +416,7 @@ func uploadWithRetry(uploader uploader, retryTimes string, opts ...retry.Option)
 	err = retry.Do(
 		func() error {
 			r, errorString, err := uploader.upload()
+			result = r
 			if err != nil {
 				for _, re := range regexList {
 					matched, err2 := regexp.MatchString(re, errorString)
@@ -429,12 +430,11 @@ func uploadWithRetry(uploader uploader, retryTimes string, opts ...retry.Option)
 				}
 				return retry.Unrecoverable(err)
 			}
-			result = r
 			return nil
 		},
 		mOpts...)
 	if err != nil {
-		return "", err
+		return result, err
 	}
 	return result, nil
 }
