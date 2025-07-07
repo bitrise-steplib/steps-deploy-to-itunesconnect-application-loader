@@ -346,7 +346,7 @@ func (a altoolUploader) upload() (string, string, error) {
 	cmd.SetStderr(&eb)
 
 	fileName := filepath.Base(a.filePth)
-	log.Infof("Uploading - %s ...", fileName)
+	log.Infof("Uploading  - %s ...", fileName)
 
 	commandStr := cmd.PrintableCommandArgs()
 	authConfig := a.authConfig
