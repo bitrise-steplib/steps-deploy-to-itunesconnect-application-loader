@@ -29,7 +29,7 @@ workflows:
         - connection: automatic
         - altool_options: --output-format xml
 
-  test_apple_id_connection_auth:
+  man_test_apple_id_connection_auth:
     title: Test Apple ID connection authentication
     before_run:
     - _prepare_test
@@ -39,7 +39,7 @@ workflows:
         - connection: apple_id
         - altool_options: --output-format xml
 
-  test_api_key_input_auth:
+  man_test_api_key_input_auth:
     title: Test API key Step Input authentication
     before_run:
     - _prepare_test
