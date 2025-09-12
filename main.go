@@ -36,12 +36,11 @@ type Config struct {
 	APIKeyPath          stepconf.Secret `env:"api_key_path"`
 	APIIssuer           string          `env:"api_issuer"`
 
-	IpaPath           string `env:"ipa_path"`
-	PkgPath           string `env:"pkg_path"`
-	Platform          string `env:"platform,opt[auto,ios,macos,tvos]"`
-	ItunesConnectUser string `env:"itunescon_user"`
-	AdditionalParams  string `env:"altool_options"`
-	RetryTimes        string `env:"retries"`
+	IpaPath          string `env:"ipa_path"`
+	PkgPath          string `env:"pkg_path"`
+	Platform         string `env:"platform,opt[auto,ios,macos,tvos]"`
+	AdditionalParams string `env:"altool_options"`
+	RetryTimes       string `env:"retries"`
 
 	// Used to get Bitrise Apple Developer Portal Connection
 	BuildURL      string          `env:"BITRISE_BUILD_URL"`
@@ -222,7 +221,7 @@ func main() {
 	}
 
 	authInputs := appleauth.Inputs{
-		Username:            cfg.ItunesConnectUser,
+		Username:            cfg.AppleID,
 		Password:            string(cfg.Password),
 		AppSpecificPassword: string(cfg.AppSpecificPassword),
 		APIIssuer:           cfg.APIIssuer,
