@@ -263,7 +263,10 @@ func writeAPIKey(privateKey, keyID string) error {
 	return fileutil.WriteStringToFile(keyPath, privateKey)
 }
 
-const typeKey = "--type"
+const (
+	typeKey    = "--type"
+	verboseKey = "--verbose"
+)
 
 func main() {
 	var cfg Config
@@ -371,33 +374,27 @@ func main() {
 	if cfg.AppID != "" {
 		if cfg.BundleID == "" {
 			if cfg.BundleID, err = getBundleID(cfg.IpaPath); err != nil {
-				failf("Failed to determine bundle ID from the IPA: %w", err)
+				failf("Failed to determine bundle ID from the IPA: %s", err)
 			}
 		}
 		if cfg.BundleVersion == "" {
 			if cfg.BundleVersion, err = getBundleVersion(cfg.IpaPath); err != nil {
-				failf("Failed to determine bundle version from the IPA: %w", err)
+				failf("Failed to determine bundle version from the IPA: %s", err)
 			}
 		}
 		if cfg.BundleShortVersion == "" {
 			if cfg.BundleShortVersion, err = getBundleShortVersionString(cfg.IpaPath); err != nil {
-				failf("Failed to determine bundle short version string from the IPA: %w", err)
+				failf("Failed to determine bundle short version string from the IPA: %s", err)
 			}
 		}
 
-		// --apple-id <id>
-		// Specifies the Apple ID of the app.
-		// --bundle-version <string>
-		// Specifies the CFBundleVersion of the app package.
-		// --bundle-short-version-string <string>
-		// Specifies the CFBundleShortVersionString of the app package.
-		uploadParams = append(uploadParams, "--apple-id", cfg.AppID)
+		uploadParams = append(uploadParams, "--apple-id", cfg.AppID) // Specifies the Apple ID of the app.
 		uploadParams = append(uploadParams, "--bundle-id", cfg.BundleID)
-		uploadParams = append(uploadParams, "--bundle-version", cfg.BundleVersion)
-		uploadParams = append(uploadParams, "--bundle-short-version-string", cfg.BundleShortVersion)
+		uploadParams = append(uploadParams, "--bundle-version", cfg.BundleVersion)                   // Specifies the CFBundleVersion of the app package.
+		uploadParams = append(uploadParams, "--bundle-short-version-string", cfg.BundleShortVersion) // Specifies the CFBundleShortVersionString of the app package.
 	}
-	if cfg.IsVerbose {
-		uploadParams = append(uploadParams, "--verbose")
+	if cfg.IsVerbose && !sliceutil.IsStringInSlice(verboseKey, additionalParams) {
+		additionalParams = append(additionalParams, verboseKey)
 	}
 
 	altoolParams := append([]string{"altool"}, uploadParams...)
@@ -409,7 +406,7 @@ func main() {
 	}
 
 	if matches := regexp.MustCompile(`(?i)Generated JWT: (.*)`).FindStringSubmatch(out); len(matches) == 2 {
-		out = strings.Replace(out, matches[1], "[REDACTED]", -1)
+		out = strings.ReplaceAll(out, matches[1], "[REDACTED]")
 	}
 
 	fmt.Println(out)
@@ -445,10 +442,10 @@ func (a altoolUploader) upload() (string, string, error) {
 	authConfig := a.authConfig
 	if authConfig.APIKey == nil {
 		if authConfig.AppleID.Password != "" {
-			commandStr = strings.Replace(commandStr, authConfig.AppleID.Password, "[REDACTED]", -1)
+			commandStr = strings.ReplaceAll(commandStr, authConfig.AppleID.Password, "[REDACTED]")
 		}
 		if authConfig.AppleID.AppSpecificPassword != "" {
-			commandStr = strings.Replace(commandStr, authConfig.AppleID.AppSpecificPassword, "[REDACTED]", -1)
+			commandStr = strings.ReplaceAll(commandStr, authConfig.AppleID.AppSpecificPassword, "[REDACTED]")
 		}
 	}
 	log.Printf("$ %s", commandStr)
