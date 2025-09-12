@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -36,13 +37,15 @@ type Config struct {
 	APIKeyPath          stepconf.Secret `env:"api_key_path"`
 	APIIssuer           string          `env:"api_issuer"`
 
-	IpaPath            string `env:"ipa_path"`
-	PkgPath            string `env:"pkg_path"`
+	IpaPath string `env:"ipa_path"`
+	PkgPath string `env:"pkg_path"`
+
+	// App details
 	Platform           string `env:"platform,opt[auto,ios,macos,tvos]"`
+	AppID              string `env:"app_id"`
 	BundleID           string `env:"bundle_id"`
 	BundleVersion      string `env:"bundle_version"`
-	BundleShortVersion string `env:"bundle_short_version"`
-	TeamID             string `env:"team_id"`
+	BundleShortVersion string `env:"bundle_short_version_string"`
 
 	// Debug
 	IsVerbose        bool   `env:"verbose_log,opt[yes,no]"`
@@ -125,6 +128,54 @@ func getPlatformType(ipaPath, platform string) platformType {
 	default:
 		return fallback()
 	}
+}
+
+func getBundleID(ipaPath string) (string, error) {
+	plistPath, err := ipa.UnwrapEmbeddedInfoPlist(ipaPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to unwrap Info.plist from the ipa: %w", err)
+	}
+	plist, err := plistutil.NewPlistDataFromFile(plistPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read Info.plist: %w", err)
+	}
+	bundleID, ok := plist.GetString("CFBundleIdentifier")
+	if !ok {
+		return "", fmt.Errorf("failed to find CFBundleIdentifier in Info.plist")
+	}
+	return bundleID, nil
+}
+
+func getBundleVersion(ipaPath string) (string, error) {
+	plistPath, err := ipa.UnwrapEmbeddedInfoPlist(ipaPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to unwrap Info.plist from the ipa: %w", err)
+	}
+	plist, err := plistutil.NewPlistDataFromFile(plistPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read Info.plist: %w", err)
+	}
+	bundleVersion, ok := plist.GetString("CFBundleVersion")
+	if !ok {
+		return "", fmt.Errorf("failed to find CFBundleVersion in Info.plist")
+	}
+	return bundleVersion, nil
+}
+
+func getBundleShortVersionString(ipaPath string) (string, error) {
+	plistPath, err := ipa.UnwrapEmbeddedInfoPlist(ipaPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to unwrap Info.plist from the ipa: %w", err)
+	}
+	plist, err := plistutil.NewPlistDataFromFile(plistPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read Info.plist: %w", err)
+	}
+	bundleShortVersion, ok := plist.GetString("CFBundleShortVersionString")
+	if !ok {
+		return "", fmt.Errorf("failed to find CFBundleShortVersionString in Info.plist")
+	}
+	return bundleShortVersion, nil
 }
 
 func parseAuthSources(connection string) ([]appleauth.Source, error) {
@@ -307,27 +358,46 @@ func main() {
 		failf("Failed to parse additional parameters, error: %s", err)
 	}
 
-	// xcrun altool --upload-package file_path --type {macos | ios | appletvos | visionos} --asc-public-id id --apple-id id
-	//  --bundle-version version --bundle-short-version-string string --bundle-id id {-u username [-p password] | --apiKey api_key
-	//  --apiIssuer issuer_id}
-
-	//  xcrun altool --validate-app -f file_path --type "{macos | ios | appletvos | visionos}" {-u username [-p password] | --apiKey
-	//  api_key --apiIssuer issuer_id}
-
-	//  xcrun altool --upload-app -f file_path --type "{macos | ios | appletvos | visionos}" {-u username [-p password] | --apiKey api_key
-	//  --apiIssuer issuer_id} [DEPRECATED use --upload-package]
-
-	//  xcrun altool --upload-hosted-content file_path --sku sku --type "{macos | ios | appletvos | visionos}" --product-id id
-	//  --asc-provider id [DEPRECATED]
-
-	//  xcrun altool --list-apps {-u username [-p password] | --apiKey api_key --apiIssuer issuer_id}
-
-	//  xcrun altool --list-providers {-u username [-p password] | --apiKey api_key --apiIssuer issuer_id}
-
-	uploadParams := []string{"--upload-app", "-f", filePth}
+	uploadParams := []string{"--upload-package", "-f", filePth}
 	// Platform type parameter was introduced in Xcode 13
 	if xcodeVersion.MajorVersion >= 13 && !sliceutil.IsStringInSlice(typeKey, additionalParams) {
 		uploadParams = append(uploadParams, typeKey, string(getPlatformType(cfg.IpaPath, cfg.Platform)))
+	}
+
+	cfg.AppID = strings.TrimSpace(cfg.AppID)
+	cfg.BundleID = strings.TrimSpace(cfg.BundleID)
+	cfg.BundleVersion = strings.TrimSpace(cfg.BundleVersion)
+	cfg.BundleShortVersion = strings.TrimSpace(cfg.BundleShortVersion)
+	if cfg.AppID != "" {
+		if cfg.BundleID == "" {
+			if cfg.BundleID, err = getBundleID(cfg.IpaPath); err != nil {
+				failf("Failed to determine bundle ID from the IPA: %w", err)
+			}
+		}
+		if cfg.BundleVersion == "" {
+			if cfg.BundleVersion, err = getBundleVersion(cfg.IpaPath); err != nil {
+				failf("Failed to determine bundle version from the IPA: %w", err)
+			}
+		}
+		if cfg.BundleShortVersion == "" {
+			if cfg.BundleShortVersion, err = getBundleShortVersionString(cfg.IpaPath); err != nil {
+				failf("Failed to determine bundle short version string from the IPA: %w", err)
+			}
+		}
+
+		// --apple-id <id>
+		// Specifies the Apple ID of the app.
+		// --bundle-version <string>
+		// Specifies the CFBundleVersion of the app package.
+		// --bundle-short-version-string <string>
+		// Specifies the CFBundleShortVersionString of the app package.
+		uploadParams = append(uploadParams, "--apple-id", cfg.AppID)
+		uploadParams = append(uploadParams, "--bundle-id", cfg.BundleID)
+		uploadParams = append(uploadParams, "--bundle-version", cfg.BundleVersion)
+		uploadParams = append(uploadParams, "--bundle-short-version-string", cfg.BundleShortVersion)
+	}
+	if cfg.IsVerbose {
+		uploadParams = append(uploadParams, "--verbose")
 	}
 
 	altoolParams := append([]string{"altool"}, uploadParams...)
@@ -365,8 +435,8 @@ func (a altoolUploader) upload() (string, string, error) {
 	cmd := command.New("xcrun", a.altoolParams...)
 	var sb bytes.Buffer
 	var eb bytes.Buffer
-	cmd.SetStdout(&sb)
-	cmd.SetStderr(&eb)
+	cmd.SetStdout(io.MultiWriter(&sb, os.Stdout))
+	cmd.SetStderr(io.MultiWriter(&eb, os.Stderr))
 
 	fileName := filepath.Base(a.filePth)
 	log.Infof("Uploading - %s ...", fileName)
@@ -386,22 +456,22 @@ func (a altoolUploader) upload() (string, string, error) {
 	err := cmd.Run()
 	ioString := sb.String()
 	errorString := eb.String()
-	if errorString != "" {
-		log.Errorf("%s", errorString)
-	}
 
 	if err != nil {
 		return ioString, errorString, err
+	}
+
+	// Xcode 26RC altool always returns exit code 0, even on some failures
+	errorRe := regexp.MustCompile(`(?s).*ERROR:.*`)
+	sucessRe := regexp.MustCompile(`(?s).*UPLOAD SUCCEEDED.*`)
+	if errorRe.MatchString(errorString) && !sucessRe.MatchString(ioString) {
+		return ioString, errorString, fmt.Errorf("Upload failed, output: %s", errorString)
 	}
 
 	return ioString, errorString, nil
 }
 
 func uploadWithRetry(uploader uploader, retryTimes string, opts ...retry.Option) (string, error) {
-	// 2025-09-12 15:43:36.017 ERROR: [altool.14870D200] Failed to upload package.
-	uploadFailureRegexes := []*regexp.Regexp{
-		regexp.MustCompile(`(?s).*Failed to upload package..*`),
-	}
 	var retriableRegexes = []*regexp.Regexp{
 		// https://bitrise.atlassian.net/browse/STEP-1190
 		regexp.MustCompile(`(?s).*Unable to determine the application using bundleId.*-19201.*`),
@@ -411,6 +481,7 @@ func uploadWithRetry(uploader uploader, retryTimes string, opts ...retry.Option)
 		regexp.MustCompile(`(?s).*server returned an invalid response.*try your request again.*`),
 		regexp.MustCompile(`(?s).*The request timed out.*`),
 	}
+
 	var result string
 	parsedRetryTimes, err := strconv.ParseInt(retryTimes, 10, 32)
 	attempts := uint(parsedRetryTimes)
@@ -437,7 +508,9 @@ func uploadWithRetry(uploader uploader, retryTimes string, opts ...retry.Option)
 	err = retry.Do(
 		func() error {
 			r, errorString, err := uploader.upload()
+			result = r
 			if err != nil {
+				fmt.Printf("Upload error, checking retries: %s\n", err)
 				for _, re := range retriableRegexes {
 					matched := re.MatchString(errorString)
 					if matched {
@@ -447,15 +520,6 @@ func uploadWithRetry(uploader uploader, retryTimes string, opts ...retry.Option)
 				return retry.Unrecoverable(err)
 			}
 
-			// Xcode 26RC altool always returns exit code 0, even on some failures
-			for _, re := range append(uploadFailureRegexes, retriableRegexes...) {
-				matched := re.MatchString(errorString)
-				if matched {
-					return retry.Unrecoverable(err)
-				}
-			}
-
-			result = r
 			return nil
 		},
 		mOpts...)

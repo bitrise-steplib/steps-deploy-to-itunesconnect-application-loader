@@ -153,34 +153,48 @@ inputs:
     - macos
     - tvos
 
+- app_id: ""
+  opts:
+    category: App details
+    title: App Store Connect app Apple ID
+    summary: Specifies the Apple ID of the app.
+    description: |-
+      Specifies the Apple ID of the app.
+
+      Available on the **App Information** page of your app in App Store Connect. For example: `1023456789`.
+    is_required: false
+
 - bundle_id: ""
   opts:
+    category: App details
     title: Bundle ID
     summary: The bundle identifier of the app to be deployed.
     description: |-
       The bundle identifier of the app to be deployed.
       
-      If not provided, the Step will try to read it from the `Info.plist`.
+      When `apple_is` is provided, will read it from `Info.plist` when not provided.
     is_required: false
 
 - bundle_version: ""
   opts:
+    category: App details
     title: Bundle version
-    summary: The build number of the app to be deployed.
+    summary:  Specifies the CFBundleVersion of the app package.
     description: |-
-      The build number of the app to be deployed.
+       Specifies the CFBundleVersion of the app package.
 
-      If not provided, the Step will try to read it from the `Info.plist`.
+       When `apple_is` is provided, will read it from `Info.plist` when not provided.
     is_required: false
 
-- bundle_short_version: ""
+- bundle_short_version_string: ""
   opts:
-    title: Bundle short version
-    summary: The version number of the app to be deployed.
+    category: App details
+    title: CFBundleShortVersionString
+    summary:  Specifies the CFBundleShortVersionString of the app package.
     description: |-
       The version number of the app to be deployed.
 
-      If not provided, the Step will try to read it from the `Info.plist`.
+      When `apple_is` is provided, will read it from `Info.plist` when not provided.
     is_required: false
 
 - verbose_log: "no"
