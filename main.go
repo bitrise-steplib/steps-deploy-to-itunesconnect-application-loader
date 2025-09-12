@@ -36,9 +36,16 @@ type Config struct {
 	APIKeyPath          stepconf.Secret `env:"api_key_path"`
 	APIIssuer           string          `env:"api_issuer"`
 
-	IpaPath          string `env:"ipa_path"`
-	PkgPath          string `env:"pkg_path"`
-	Platform         string `env:"platform,opt[auto,ios,macos,tvos]"`
+	IpaPath            string `env:"ipa_path"`
+	PkgPath            string `env:"pkg_path"`
+	Platform           string `env:"platform,opt[auto,ios,macos,tvos]"`
+	BundleID           string `env:"bundle_id"`
+	BundleVersion      string `env:"bundle_version"`
+	BundleShortVersion string `env:"bundle_short_version"`
+	TeamID             string `env:"team_id"`
+
+	// Debug
+	IsVerbose        bool   `env:"verbose_log,opt[yes,no]"`
 	AdditionalParams string `env:"altool_options"`
 	RetryTimes       string `env:"retries"`
 

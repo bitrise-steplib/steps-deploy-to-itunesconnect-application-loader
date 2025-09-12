@@ -71,15 +71,17 @@ inputs:
       - `automatic`: Use any enabled Apple Developer connection, either based on Apple ID authentication or API key authentication.  Step inputs are only used as a fallback. API key authentication has priority over Apple ID authentication in both cases.
       - `api_key`: Use the Apple Developer connection based on API key authentication. Authentication-related Step inputs are ignored.
       - `apple_id`: Use the Apple Developer connection based on Apple ID authentication and the **Application-specific password** Step input. Other authentication-related Step inputs are ignored.
-      - `off`: Do not use any Apple Developer Connection. Only authentication-related Step inputs are considered.
+      - `off`: Do not use any Apple Developer Connection. Use Inputs under "App Store Connect connection override" to configure athentication, as only these are considered.
     is_required: true
     value_options:
     - automatic
     - api_key
     - apple_id
     - "off"
+
 - api_key_path: ""
   opts:
+    category: App Store Connect connection override
     title: "API Key: URL"
     summary: Path to local or remote file
     description: |-
@@ -90,24 +92,32 @@ inputs:
       You can upload your key on the **Generic File Storage** tab in the Workflow Editor and set the Environment Variable for the file here.
 
       For example: `$BITRISEIO_MYKEY_URL`
+
 - api_issuer: ""
   opts:
+    category: App Store Connect connection override
     title: "API Key: Issuer ID"
     description: |-
       Issuer ID. Required if **API Key: URL** (`api_key_path`) is specified.
+
 - itunescon_user: ""
   opts:
+    category: App Store Connect connection override
     title: "Apple ID: Email"
     summary: Email for Apple ID login.
     description: Email for Apple ID login.
     is_sensitive: true
+
 - password: ""
   opts:
+    category: App Store Connect connection override
     title: "Apple ID: Password"
     description: Password for the specified Apple ID.
     is_sensitive: true
+
 - app_password: ""
   opts:
+    category: App Store Connect connection override
     title: "Apple ID: Application-specific password"
     summary: Optional if using two-factor enabled Apple ID.
     description: |-
@@ -117,18 +127,21 @@ inputs:
       [AppleID Website](https://appleid.apple.com). It can be used to
       bypass two-factor authentication.
     is_sensitive: true
+
 - ipa_path: $BITRISE_IPA_PATH
   opts:
     title: IPA path
     description: |-
       Path to your IPA file to be deployed.
       **NOTE:** This input or `PKG path` is required.
+
 - pkg_path: $BITRISE_PKG_PATH
   opts:
     title: PKG path
     description: |-
       Path to your PKG file to be deployed.
       **NOTE:** This input or `IPA path` is required.
+
 - platform: auto
   opts:
     title: Platform
@@ -139,14 +152,57 @@ inputs:
     - ios
     - macos
     - tvos
+
+- bundle_id: ""
+  opts:
+    title: Bundle ID
+    summary: The bundle identifier of the app to be deployed.
+    description: |-
+      The bundle identifier of the app to be deployed.
+      
+      If not provided, the Step will try to read it from the `Info.plist`.
+    is_required: false
+
+- bundle_version: ""
+  opts:
+    title: Bundle version
+    summary: The build number of the app to be deployed.
+    description: |-
+      The build number of the app to be deployed.
+
+      If not provided, the Step will try to read it from the `Info.plist`.
+    is_required: false
+
+- bundle_short_version: ""
+  opts:
+    title: Bundle short version
+    summary: The version number of the app to be deployed.
+    description: |-
+      The version number of the app to be deployed.
+
+      If not provided, the Step will try to read it from the `Info.plist`.
+    is_required: false
+
+- verbose_log: "no"
+  opts:
+    category: Debugging
+    title: Enable verbose logging
+    summary: If this input is set, the Step will print additional logs for debugging.
+    value_options:
+    - "yes"
+    - "no"
+    is_required: true
+
 - retries: "10"
   opts:
+    category: Debugging
     title: Retry times
     description: |-
       Retry times when failed, set to `0` for infinite retry
+
 - altool_options:
   opts:
-    category: Debug
+    category: Debugging
     title: Additional options for `altool` call
     description: |-
       Options added to the end of the `altool` call.
