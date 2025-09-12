@@ -171,7 +171,7 @@ inputs:
     summary: The bundle identifier of the app to be deployed.
     description: |-
       The bundle identifier of the app to be deployed.
-      
+
       When `apple_is` is provided, will read it from `Info.plist` when not provided.
     is_required: false
 
@@ -179,7 +179,7 @@ inputs:
   opts:
     category: App details
     title: Bundle version
-    summary:  Specifies the CFBundleVersion of the app package.
+    summary: Specifies the CFBundleVersion of the app package.
     description: |-
        Specifies the CFBundleVersion of the app package.
 
@@ -190,7 +190,7 @@ inputs:
   opts:
     category: App details
     title: CFBundleShortVersionString
-    summary:  Specifies the CFBundleShortVersionString of the app package.
+    summary: Specifies the CFBundleShortVersionString of the app package.
     description: |-
       The version number of the app to be deployed.
 
