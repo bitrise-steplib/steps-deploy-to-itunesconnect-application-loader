@@ -307,6 +307,23 @@ func main() {
 		failf("Failed to parse additional parameters, error: %s", err)
 	}
 
+	// xcrun altool --upload-package file_path --type {macos | ios | appletvos | visionos} --asc-public-id id --apple-id id
+	//  --bundle-version version --bundle-short-version-string string --bundle-id id {-u username [-p password] | --apiKey api_key
+	//  --apiIssuer issuer_id}
+
+	//  xcrun altool --validate-app -f file_path --type "{macos | ios | appletvos | visionos}" {-u username [-p password] | --apiKey
+	//  api_key --apiIssuer issuer_id}
+
+	//  xcrun altool --upload-app -f file_path --type "{macos | ios | appletvos | visionos}" {-u username [-p password] | --apiKey api_key
+	//  --apiIssuer issuer_id} [DEPRECATED use --upload-package]
+
+	//  xcrun altool --upload-hosted-content file_path --sku sku --type "{macos | ios | appletvos | visionos}" --product-id id
+	//  --asc-provider id [DEPRECATED]
+
+	//  xcrun altool --list-apps {-u username [-p password] | --apiKey api_key --apiIssuer issuer_id}
+
+	//  xcrun altool --list-providers {-u username [-p password] | --apiKey api_key --apiIssuer issuer_id}
+
 	uploadParams := []string{"--upload-app", "-f", filePth}
 	// Platform type parameter was introduced in Xcode 13
 	if xcodeVersion.MajorVersion >= 13 && !sliceutil.IsStringInSlice(typeKey, additionalParams) {
@@ -381,14 +398,18 @@ func (a altoolUploader) upload() (string, string, error) {
 }
 
 func uploadWithRetry(uploader uploader, retryTimes string, opts ...retry.Option) (string, error) {
-	var regexList = []string{
+	// 2025-09-12 15:43:36.017 ERROR: [altool.14870D200] Failed to upload package.
+	uploadFailureRegexes := []*regexp.Regexp{
+		regexp.MustCompile(`(?s).*Failed to upload package..*`),
+	}
+	var retriableRegexes = []*regexp.Regexp{
 		// https://bitrise.atlassian.net/browse/STEP-1190
-		`(?s).*Unable to determine the application using bundleId.*-19201.*`,
-		`(?s).*Unable to determine app platform for 'Undefined' software type.*1194.*`,
-		`(?s).*TransporterService.*error occurred trying to read the bundle.*-18000.*`,
-		`(?s).*Unable to authenticate.*-19209.*`,
-		`(?s).*server returned an invalid response.*try your request again.*`,
-		`(?s).*The request timed out.*`,
+		regexp.MustCompile(`(?s).*Unable to determine the application using bundleId.*-19201.*`),
+		regexp.MustCompile(`(?s).*Unable to determine app platform for 'Undefined' software type.*1194.*`),
+		regexp.MustCompile(`(?s).*TransporterService.*error occurred trying to read the bundle.*-18000.*`),
+		regexp.MustCompile(`(?s).*Unable to authenticate.*-19209.*`),
+		regexp.MustCompile(`(?s).*server returned an invalid response.*try your request again.*`),
+		regexp.MustCompile(`(?s).*The request timed out.*`),
 	}
 	var result string
 	parsedRetryTimes, err := strconv.ParseInt(retryTimes, 10, 32)
@@ -417,18 +438,23 @@ func uploadWithRetry(uploader uploader, retryTimes string, opts ...retry.Option)
 		func() error {
 			r, errorString, err := uploader.upload()
 			if err != nil {
-				for _, re := range regexList {
-					matched, err2 := regexp.MatchString(re, errorString)
-					if err2 != nil {
-						log.Warnf("Couldn't match %s with regex %s", errorString, re)
-						continue
-					}
+				for _, re := range retriableRegexes {
+					matched := re.MatchString(errorString)
 					if matched {
 						return err
 					}
 				}
 				return retry.Unrecoverable(err)
 			}
+
+			// Xcode 26RC altool always returns exit code 0, even on some failures
+			for _, re := range append(uploadFailureRegexes, retriableRegexes...) {
+				matched := re.MatchString(errorString)
+				if matched {
+					return retry.Unrecoverable(err)
+				}
+			}
+
 			result = r
 			return nil
 		},
