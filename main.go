@@ -18,7 +18,6 @@ import (
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/pathutil"
 	httpretry "github.com/bitrise-io/go-utils/retry"
-	"github.com/bitrise-io/go-utils/sliceutil"
 	fileutilv2 "github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/appleauth"
@@ -41,11 +40,11 @@ type Config struct {
 	PkgPath string `env:"pkg_path"`
 
 	// App details
-	Platform           string `env:"platform,opt[auto,ios,macos,tvos]"`
-	AppID              string `env:"app_id"`
-	BundleID           string `env:"bundle_id"`
-	BundleVersion      string `env:"bundle_version"`
-	BundleShortVersion string `env:"bundle_short_version_string"`
+	Platform                 string `env:"platform,opt[auto,ios,macos,tvos]"`
+	AppID                    string `env:"app_id"`
+	BundleID                 string `env:"bundle_id"`
+	BundleVersion            string `env:"bundle_version"`
+	BundleShortVersionString string `env:"bundle_short_version_string"`
 
 	// Debug
 	IsVerbose        bool   `env:"verbose_log,opt[yes,no]"`
@@ -183,7 +182,7 @@ func main() {
 	cfg.AppID = strings.TrimSpace(cfg.AppID)
 	cfg.BundleID = strings.TrimSpace(cfg.BundleID)
 	cfg.BundleVersion = strings.TrimSpace(cfg.BundleVersion)
-	cfg.BundleShortVersion = strings.TrimSpace(cfg.BundleShortVersion)
+	cfg.BundleShortVersionString = strings.TrimSpace(cfg.BundleShortVersionString)
 
 	authInputs := appleauth.Inputs{
 		Username:            cfg.AppleID,
@@ -264,54 +263,27 @@ func main() {
 		failf(logger, "Failed to parse additional parameters, error: %s", err)
 	}
 
-	var uploadParams []string
-	if xcodeVersion.MajorVersion >= 26 {
-		// Use upload-package from Xcode 26. This will cause less of a breaking change,
-		// as App ID, BundleID, Version and ShortVersion are optional in Xcode 26, but required in Xcode 16.
-		uploadParams = []string{"--upload-package", filePth}
-	} else {
-		uploadParams = []string{"--upload-app", "-f", filePth}
+	packageDetails := packageDetails{
+		bundleID:                 cfg.BundleID,
+		bundleVersion:            cfg.BundleVersion,
+		bundleShortVersionString: cfg.BundleShortVersionString,
 	}
-
-	// Platform type parameter was introduced in Xcode 13
-	if !sliceutil.IsStringInSlice(typeKey, additionalParams) {
-		uploadParams = append(uploadParams, typeKey, string(getPlatformType(logger, cfg.IpaPath, cfg.Platform)))
-	}
-
-	if xcodeVersion.MajorVersion < 26 && cfg.AppID != "" {
-		logger.Warnf("App ID is not supported with Xcode versions below 26, ignoring it.")
-	}
-	if xcodeVersion.MajorVersion >= 26 && cfg.AppID != "" { // If App ID is provided, BundleID, Version and ShortVersion must be provided too, or read from the package
+	if xcodeVersion.MajorVersion >= 26 && cfg.AppID != "" {
+		// If App ID is provided, BundleID, Version and ShortVersion must be provided too, or read from the package
 		if cfg.IpaPath == "" {
 			failf(logger, "App ID not supported with PKG upload yet.")
 		}
 
-		packageDetails, err := readPackageDetails(parser, filePth)
-		if err != nil {
-			failf(logger, "Failed to read package details: %s", err)
+		if cfg.BundleID == "" && cfg.BundleVersion == "" && cfg.BundleShortVersionString == "" { // We need to read package details
+			packageDetails, err = readPackageDetails(parser, filePth, packageDetails)
+			if err != nil {
+				logger.Infof("Provide App details Inputs to skip Info.plist parsing: app_id, bundle_id, bundle_version, bundle_short_version_string.")
+				failf(logger, "Could not read App details from Info.plist: %s", err)
+			}
 		}
-		if cfg.BundleID == "" {
-			cfg.BundleID = packageDetails.bundleID
-		}
-		if cfg.BundleVersion == "" {
-			cfg.BundleVersion = packageDetails.bundleVersion
-		}
-		if cfg.BundleShortVersion == "" {
-			cfg.BundleShortVersion = packageDetails.bundleShortVersionString
-		}
-
-		uploadParams = append(uploadParams, "--apple-id", cfg.AppID) // Specifies the App Store Connect Apple ID of the app. (e.g. 1023456789)
-		uploadParams = append(uploadParams, "--bundle-id", cfg.BundleID)
-		uploadParams = append(uploadParams, "--bundle-version", cfg.BundleVersion)                   // Specifies the CFBundleVersion of the app package.
-		uploadParams = append(uploadParams, "--bundle-short-version-string", cfg.BundleShortVersion) // Specifies the CFBundleShortVersionString of the app package.
-	}
-	if cfg.IsVerbose && !sliceutil.IsStringInSlice(verboseKey, additionalParams) {
-		additionalParams = append(additionalParams, verboseKey)
 	}
 
-	altoolParams := append([]string{"altool"}, uploadParams...)
-	altoolParams = append(altoolParams, authParams...)
-	altoolParams = append(altoolParams, additionalParams...)
+	altoolParams := buildAltoolCommand(logger, filePth, packageDetails, cfg.Platform, additionalParams, authParams, xcodeVersion.MajorVersion, cfg.AppID, cfg.IsVerbose)
 	out, err := uploadWithRetry(logger, newAltoolUploader(logger, altoolParams, filePth, authConfig), cfg.RetryTimes)
 	if err != nil {
 		failf(logger, "Uploading IPA failed: %s", err)

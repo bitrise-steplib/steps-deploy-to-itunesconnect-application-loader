@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/ipa"
@@ -28,7 +29,7 @@ type packageDetails struct {
 //	-t, --type {macos | ios | appletvos}     Specify the platform of the file, or of the host app when using --upload-hosted-content. (Output by 'xcrun altool -h')
 //
 // if 'auto' is selected the 'DTPlatformName' is read from Info.plist
-func getPlatformType(logger log.Logger, ipaPath, platform string) platformType {
+func getPlatformType(logger log.Logger, filePath, platform string) platformType {
 	fallback := func(autoErr error) platformType {
 		logger.Warnf("Automatic platform type lookup failed: %s", autoErr)
 		logger.Warnf("Falling back to using `ios` as platform type")
@@ -37,10 +38,10 @@ func getPlatformType(logger log.Logger, ipaPath, platform string) platformType {
 	switch platform {
 	case "auto":
 		// *.pkg -> macos
-		if ipaPath == "" {
+		if filepath.Ext(filePath) == ".pkg" {
 			return macOS
 		}
-		plistPath, err := ipa.UnwrapEmbeddedInfoPlist(ipaPath)
+		plistPath, err := ipa.UnwrapEmbeddedInfoPlist(filePath)
 		if err != nil {
 			return fallback(fmt.Errorf("failed to unwrap Info.plist: %w", err))
 		}
@@ -73,7 +74,7 @@ func getPlatformType(logger log.Logger, ipaPath, platform string) platformType {
 	}
 }
 
-func readPackageDetails(parser *metaparser.Parser, packagePath string) (packageDetails, error) {
+func readPackageDetails(parser *metaparser.Parser, packagePath string, appInfo packageDetails) (packageDetails, error) {
 	info, err := parser.ParseIPAData(packagePath)
 	if err != nil {
 		return packageDetails{}, fmt.Errorf("failed to parse archive: %w", err)
@@ -82,9 +83,15 @@ func readPackageDetails(parser *metaparser.Parser, packagePath string) (packageD
 		return packageDetails{}, fmt.Errorf("failed to parse archive: no metadata found")
 	}
 
-	return packageDetails{
-		bundleID:                 info.AppInfo.BundleID,
-		bundleVersion:            info.AppInfo.BuildNumber,
-		bundleShortVersionString: info.AppInfo.Version,
-	}, nil
+	if appInfo.bundleID == "" {
+		appInfo.bundleID = info.AppInfo.BundleID
+	}
+	if appInfo.bundleVersion == "" {
+		appInfo.bundleVersion = info.AppInfo.BuildNumber
+	}
+	if appInfo.bundleShortVersionString == "" {
+		appInfo.bundleShortVersionString = info.AppInfo.Version
+	}
+
+	return appInfo, nil
 }

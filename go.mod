@@ -1,6 +1,6 @@
 module github.com/bitrise-steplib/steps-deploy-to-itunesconnect-application-loader
 
-go 1.22
+go 1.23.0
 
 require (
 	github.com/avast/retry-go/v4 v4.6.1
@@ -23,7 +23,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	golang.org/x/crypto v0.31.0 // indirect
+	golang.org/x/crypto v0.39.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	howett.net/plist v1.0.1 // indirect
 )
