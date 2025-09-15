@@ -264,7 +264,7 @@ func main() {
 		failf(logger, "Failed to parse additional parameters, error: %s", err)
 	}
 
-	uploadParams := []string{}
+	var uploadParams []string
 	if xcodeVersion.MajorVersion >= 26 {
 		// Use upload-package from Xcode 26. This will cause less of a breaking change,
 		// as App ID, BundleID, Version and ShortVersion are optional in Xcode 26, but required in Xcode 16.
