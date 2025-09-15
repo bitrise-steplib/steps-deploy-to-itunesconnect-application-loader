@@ -20,9 +20,12 @@ import (
 	"github.com/bitrise-io/go-utils/pathutil"
 	httpretry "github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/sliceutil"
+	fileutilv2 "github.com/bitrise-io/go-utils/v2/fileutil"
+	logv2 "github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-io/go-xcode/utility"
+	"github.com/bitrise-io/go-xcode/v2/metaparser"
 	shellquote "github.com/kballard/go-shellquote"
 )
 
@@ -54,14 +57,6 @@ type Config struct {
 	BuildURL      string          `env:"BITRISE_BUILD_URL"`
 	BuildAPIToken stepconf.Secret `env:"BITRISE_BUILD_API_TOKEN"`
 }
-
-type platformType string
-
-const (
-	iOS   platformType = "ios"
-	tvOS  platformType = "appletvos"
-	macOS platformType = "macos"
-)
 
 func (cfg Config) validateArtifact() error {
 	cfg.IpaPath = strings.TrimSpace(cfg.IpaPath)
@@ -170,6 +165,9 @@ const (
 )
 
 func main() {
+	logger := logv2.NewLogger()
+	parser := metaparser.New(logger, fileutilv2.NewFileManager())
+
 	var cfg Config
 	if err := stepconf.Parse(&cfg); err != nil {
 		failf("Error: %s", err)
@@ -182,6 +180,11 @@ func main() {
 	if err := cfg.validateArtifact(); err != nil {
 		failf("Input error: %s", err)
 	}
+
+	cfg.AppID = strings.TrimSpace(cfg.AppID)
+	cfg.BundleID = strings.TrimSpace(cfg.BundleID)
+	cfg.BundleVersion = strings.TrimSpace(cfg.BundleVersion)
+	cfg.BundleShortVersion = strings.TrimSpace(cfg.BundleShortVersion)
 
 	authInputs := appleauth.Inputs{
 		Username:            cfg.AppleID,
@@ -199,7 +202,6 @@ func main() {
 		failf("Failed to determine Xcode version: %s", err)
 	}
 
-	//
 	// Select and fetch Apple authenication source
 	authSources, err := parseAuthSources(cfg.BitriseConnection)
 	if err != nil {
@@ -269,25 +271,23 @@ func main() {
 		uploadParams = append(uploadParams, typeKey, string(getPlatformType(cfg.IpaPath, cfg.Platform)))
 	}
 
-	cfg.AppID = strings.TrimSpace(cfg.AppID)
-	cfg.BundleID = strings.TrimSpace(cfg.BundleID)
-	cfg.BundleVersion = strings.TrimSpace(cfg.BundleVersion)
-	cfg.BundleShortVersion = strings.TrimSpace(cfg.BundleShortVersion)
 	if cfg.AppID != "" { // If App ID is provided, BundleID, Version and ShortVersion must be provided too, or read from the package
+		if cfg.IpaPath == "" {
+			failf("App ID not supported with PKG upload yet.")
+		}
+
+		packageDetails, err := readPackageDetails(parser, filePth)
+		if err != nil {
+			failf("Failed to read package details: %s", err)
+		}
 		if cfg.BundleID == "" {
-			if cfg.BundleID, err = getBundleID(cfg.IpaPath); err != nil {
-				failf("Failed to determine bundle ID from the IPA: %s", err)
-			}
+			cfg.BundleID = packageDetails.bundleID
 		}
 		if cfg.BundleVersion == "" {
-			if cfg.BundleVersion, err = getBundleVersion(cfg.IpaPath); err != nil {
-				failf("Failed to determine bundle version from the IPA: %s", err)
-			}
+			cfg.BundleVersion = packageDetails.bundleVersion
 		}
 		if cfg.BundleShortVersion == "" {
-			if cfg.BundleShortVersion, err = getBundleShortVersionString(cfg.IpaPath); err != nil {
-				failf("Failed to determine bundle short version string from the IPA: %s", err)
-			}
+			cfg.BundleShortVersion = packageDetails.bundleShortVersionString
 		}
 
 		uploadParams = append(uploadParams, "--apple-id", cfg.AppID) // Specifies the App Store Connect Apple ID of the app. (e.g. 1023456789)

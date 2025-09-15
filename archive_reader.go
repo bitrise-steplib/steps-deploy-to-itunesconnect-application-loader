@@ -3,10 +3,25 @@ package main
 import (
 	"fmt"
 
-	"github.com/bitrise-io/go-utils/log"
+	v1Log "github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/ipa"
 	"github.com/bitrise-io/go-xcode/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/metaparser"
 )
+
+type platformType string
+
+const (
+	iOS   platformType = "ios"
+	tvOS  platformType = "appletvos"
+	macOS platformType = "macos"
+)
+
+type packageDetails struct {
+	bundleID                 string
+	bundleVersion            string
+	bundleShortVersionString string
+}
 
 // getPlatformType maps platform to an altool parameter
 //
@@ -15,7 +30,7 @@ import (
 // if 'auto' is selected the 'DTPlatformName' is read from Info.plist
 func getPlatformType(ipaPath, platform string) platformType {
 	fallback := func() platformType {
-		log.Warnf("Failed to analyze %s, fallback platform type to ios", ipaPath)
+		v1Log.Warnf("Failed to analyze %s, fallback platform type to ios", ipaPath)
 		return iOS
 	}
 	switch platform {
@@ -57,50 +72,18 @@ func getPlatformType(ipaPath, platform string) platformType {
 	}
 }
 
-func getBundleID(ipaPath string) (string, error) {
-	plistPath, err := ipa.UnwrapEmbeddedInfoPlist(ipaPath)
+func readPackageDetails(parser *metaparser.Parser, packagePath string) (packageDetails, error) {
+	info, err := parser.ParseIPAData(packagePath)
 	if err != nil {
-		return "", fmt.Errorf("failed to unwrap Info.plist from the ipa: %w", err)
+		return packageDetails{}, fmt.Errorf("failed to parse archive: %w", err)
 	}
-	plist, err := plistutil.NewPlistDataFromFile(plistPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read Info.plist: %w", err)
+	if info == nil {
+		return packageDetails{}, fmt.Errorf("failed to parse archive: no metadata found")
 	}
-	bundleID, ok := plist.GetString("CFBundleIdentifier")
-	if !ok {
-		return "", fmt.Errorf("failed to find CFBundleIdentifier in Info.plist")
-	}
-	return bundleID, nil
-}
 
-func getBundleVersion(ipaPath string) (string, error) {
-	plistPath, err := ipa.UnwrapEmbeddedInfoPlist(ipaPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to unwrap Info.plist from the ipa: %w", err)
-	}
-	plist, err := plistutil.NewPlistDataFromFile(plistPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read Info.plist: %w", err)
-	}
-	bundleVersion, ok := plist.GetString("CFBundleVersion")
-	if !ok {
-		return "", fmt.Errorf("failed to find CFBundleVersion in Info.plist")
-	}
-	return bundleVersion, nil
-}
-
-func getBundleShortVersionString(ipaPath string) (string, error) {
-	plistPath, err := ipa.UnwrapEmbeddedInfoPlist(ipaPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to unwrap Info.plist from the ipa: %w", err)
-	}
-	plist, err := plistutil.NewPlistDataFromFile(plistPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read Info.plist: %w", err)
-	}
-	bundleShortVersion, ok := plist.GetString("CFBundleShortVersionString")
-	if !ok {
-		return "", fmt.Errorf("failed to find CFBundleShortVersionString in Info.plist")
-	}
-	return bundleShortVersion, nil
+	return packageDetails{
+		bundleID:                 info.AppInfo.BundleID,
+		bundleVersion:            info.AppInfo.BuildNumber,
+		bundleShortVersionString: info.AppInfo.Version,
+	}, nil
 }
