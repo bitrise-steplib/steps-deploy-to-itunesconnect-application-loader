@@ -46,10 +46,11 @@ workflows:
     steps:
     - path::./:
         inputs:
+        - app_id: 1437806916
         - connection: "off"
         - api_key_path: $BITFALL_APPSTORECONNECT_API_KEY_URL
         - api_issuer: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
-        - altool_options: --output-format xml
+        - altool_options: --output-format json
 
   _prepare_test:
     title: Prepare test
@@ -108,3 +109,4 @@ workflows:
         - distribution_method: app-store
         - project_path: $BITRISE_PROJECT_PATH
         - scheme: $BITRISE_SCHEME
+        - log_formatter: xcodebuild

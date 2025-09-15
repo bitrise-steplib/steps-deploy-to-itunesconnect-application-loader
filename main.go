@@ -264,7 +264,7 @@ func main() {
 		failf(logger, "Failed to parse additional parameters, error: %s", err)
 	}
 
-	uploadParams := []string{"--upload-package", "-f", filePth}
+	uploadParams := []string{"--upload-package", filePth}
 	// Platform type parameter was introduced in Xcode 13
 	if xcodeVersion.MajorVersion >= 13 && !sliceutil.IsStringInSlice(typeKey, additionalParams) {
 		uploadParams = append(uploadParams, typeKey, string(getPlatformType(logger, cfg.IpaPath, cfg.Platform)))
