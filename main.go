@@ -264,13 +264,24 @@ func main() {
 		failf(logger, "Failed to parse additional parameters, error: %s", err)
 	}
 
-	uploadParams := []string{"--upload-package", filePth}
+	uploadParams := []string{}
+	if xcodeVersion.MajorVersion >= 26 {
+		// Use upload-package from Xcode 26. This will cause less of a breaking change,
+		// as App ID, BundleID, Version and ShortVersion are optional in Xcode 26, but required in Xcode 16.
+		uploadParams = []string{"--upload-package", filePth}
+	} else {
+		uploadParams = []string{"--upload-app", "-f", filePth}
+	}
+
 	// Platform type parameter was introduced in Xcode 13
-	if xcodeVersion.MajorVersion >= 13 && !sliceutil.IsStringInSlice(typeKey, additionalParams) {
+	if !sliceutil.IsStringInSlice(typeKey, additionalParams) {
 		uploadParams = append(uploadParams, typeKey, string(getPlatformType(logger, cfg.IpaPath, cfg.Platform)))
 	}
 
-	if cfg.AppID != "" { // If App ID is provided, BundleID, Version and ShortVersion must be provided too, or read from the package
+	if xcodeVersion.MajorVersion < 26 && cfg.AppID != "" {
+		logger.Warnf("App ID is not supported with Xcode versions below 26, ignoring it.")
+	}
+	if xcodeVersion.MajorVersion >= 26 && cfg.AppID != "" { // If App ID is provided, BundleID, Version and ShortVersion must be provided too, or read from the package
 		if cfg.IpaPath == "" {
 			failf(logger, "App ID not supported with PKG upload yet.")
 		}
@@ -363,7 +374,7 @@ func (a altoolUploader) upload() (string, string, error) {
 	// Xcode 26RC altool always returns exit code 0, even on some failures
 	errorRe := regexp.MustCompile(`(?s).*ERROR:.*`)
 	sucessRe := regexp.MustCompile(`(?s).*UPLOAD SUCCEEDED.*`)
-	if errorRe.MatchString(errorString) && !sucessRe.MatchString(ioString) {
+	if errorRe.MatchString(errorString) && !sucessRe.MatchString(ioString) && !sucessRe.MatchString(errorString) {
 		return ioString, errorString, fmt.Errorf("Upload failed, output: %s", errorString)
 	}
 

@@ -29,7 +29,7 @@ workflows:
         - connection: automatic
         - altool_options: --output-format xml
 
-  test_apple_id_connection_auth:
+  manual_test_apple_id_connection_auth:
     title: Test Apple ID connection authentication
     before_run:
     - _prepare_test
@@ -46,6 +46,7 @@ workflows:
     steps:
     - path::./:
         inputs:
+        - ipa_path: /var/folders/r5/gkvczn3j2tb0m79nwby9fjv80000gq/T/deploy2766821977/Application Loader Test.ipa
         - app_id: 1437806916
         - connection: "off"
         - api_key_path: $BITFALL_APPSTORECONNECT_API_KEY_URL
@@ -103,7 +104,7 @@ workflows:
         inputs:
         - build_version: $BUILD_NUMBER
         - plist_path: $INFO_PLIST_PATH
-    - xcode-archive:
+    - xcode-archive@5.8.1:
         title: Create Archive
         inputs:
         - distribution_method: app-store
