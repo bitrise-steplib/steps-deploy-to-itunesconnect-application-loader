@@ -22,8 +22,6 @@ import (
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/devportalservice"
-	"github.com/bitrise-io/go-xcode/ipa"
-	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/utility"
 	shellquote "github.com/kballard/go-shellquote"
 )
@@ -79,103 +77,6 @@ func (cfg Config) validateArtifact() error {
 	}
 
 	return nil
-}
-
-// getPlatformType maps platform to an altool parameter
-//
-//	-t, --type {macos | ios | appletvos}     Specify the platform of the file, or of the host app when using --upload-hosted-content. (Output by 'xcrun altool -h')
-//
-// if 'auto' is selected the 'DTPlatformName' is read from Info.plist
-func getPlatformType(ipaPath, platform string) platformType {
-	fallback := func() platformType {
-		log.Warnf("Failed to analyze %s, fallback platform type to ios", ipaPath)
-		return iOS
-	}
-	switch platform {
-	case "auto":
-		// *.pkg -> macos
-		if ipaPath == "" {
-			return macOS
-		}
-		plistPath, err := ipa.UnwrapEmbeddedInfoPlist(ipaPath)
-		if err != nil {
-			return fallback()
-		}
-		plist, err := plistutil.NewPlistDataFromFile(plistPath)
-		if err != nil {
-			return fallback()
-		}
-		platform, ok := plist.GetString("DTPlatformName")
-		if !ok {
-			return fallback()
-		}
-		switch platform {
-		case "appletvos", "appletvsimulator":
-			return tvOS
-		case "macosx":
-			return macOS
-		case "iphoneos", "iphonesimulator", "watchos", "watchsimulator":
-			return iOS
-		default:
-			return fallback()
-		}
-	case "ios":
-		return iOS
-	case "macos":
-		return macOS
-	case "tvos":
-		return tvOS
-	default:
-		return fallback()
-	}
-}
-
-func getBundleID(ipaPath string) (string, error) {
-	plistPath, err := ipa.UnwrapEmbeddedInfoPlist(ipaPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to unwrap Info.plist from the ipa: %w", err)
-	}
-	plist, err := plistutil.NewPlistDataFromFile(plistPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read Info.plist: %w", err)
-	}
-	bundleID, ok := plist.GetString("CFBundleIdentifier")
-	if !ok {
-		return "", fmt.Errorf("failed to find CFBundleIdentifier in Info.plist")
-	}
-	return bundleID, nil
-}
-
-func getBundleVersion(ipaPath string) (string, error) {
-	plistPath, err := ipa.UnwrapEmbeddedInfoPlist(ipaPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to unwrap Info.plist from the ipa: %w", err)
-	}
-	plist, err := plistutil.NewPlistDataFromFile(plistPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read Info.plist: %w", err)
-	}
-	bundleVersion, ok := plist.GetString("CFBundleVersion")
-	if !ok {
-		return "", fmt.Errorf("failed to find CFBundleVersion in Info.plist")
-	}
-	return bundleVersion, nil
-}
-
-func getBundleShortVersionString(ipaPath string) (string, error) {
-	plistPath, err := ipa.UnwrapEmbeddedInfoPlist(ipaPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to unwrap Info.plist from the ipa: %w", err)
-	}
-	plist, err := plistutil.NewPlistDataFromFile(plistPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read Info.plist: %w", err)
-	}
-	bundleShortVersion, ok := plist.GetString("CFBundleShortVersionString")
-	if !ok {
-		return "", fmt.Errorf("failed to find CFBundleShortVersionString in Info.plist")
-	}
-	return bundleShortVersion, nil
 }
 
 func parseAuthSources(connection string) ([]appleauth.Source, error) {
@@ -276,6 +177,7 @@ func main() {
 
 	stepconf.Print(cfg)
 	fmt.Println()
+	log.SetEnableDebugLog(cfg.IsVerbose)
 
 	if err := cfg.validateArtifact(); err != nil {
 		failf("Input error: %s", err)
@@ -371,7 +273,7 @@ func main() {
 	cfg.BundleID = strings.TrimSpace(cfg.BundleID)
 	cfg.BundleVersion = strings.TrimSpace(cfg.BundleVersion)
 	cfg.BundleShortVersion = strings.TrimSpace(cfg.BundleShortVersion)
-	if cfg.AppID != "" {
+	if cfg.AppID != "" { // If App ID is provided, BundleID, Version and ShortVersion must be provided too, or read from the package
 		if cfg.BundleID == "" {
 			if cfg.BundleID, err = getBundleID(cfg.IpaPath); err != nil {
 				failf("Failed to determine bundle ID from the IPA: %s", err)
@@ -388,7 +290,7 @@ func main() {
 			}
 		}
 
-		uploadParams = append(uploadParams, "--apple-id", cfg.AppID) // Specifies the Apple ID of the app.
+		uploadParams = append(uploadParams, "--apple-id", cfg.AppID) // Specifies the App Store Connect Apple ID of the app. (e.g. 1023456789)
 		uploadParams = append(uploadParams, "--bundle-id", cfg.BundleID)
 		uploadParams = append(uploadParams, "--bundle-version", cfg.BundleVersion)                   // Specifies the CFBundleVersion of the app package.
 		uploadParams = append(uploadParams, "--bundle-short-version-string", cfg.BundleShortVersion) // Specifies the CFBundleShortVersionString of the app package.
