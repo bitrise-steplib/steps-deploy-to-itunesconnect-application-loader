@@ -275,11 +275,7 @@ func main() {
 
 	// Platform type parameter was introduced in Xcode 13
 	if !sliceutil.IsStringInSlice(typeKey, additionalParams) {
-		platform, err := getPlatformType(logger, cfg.IpaPath, cfg.Platform)
-		if err != nil {
-			logger.Warnf("Automatic platform type lookup failed: %s", err)
-		}
-		uploadParams = append(uploadParams, typeKey, string(platform))
+		uploadParams = append(uploadParams, typeKey, string(getPlatformType(logger, cfg.IpaPath, cfg.Platform)))
 	}
 
 	if xcodeVersion.MajorVersion < 26 && cfg.AppID != "" {

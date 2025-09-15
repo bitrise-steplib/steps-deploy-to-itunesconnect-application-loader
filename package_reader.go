@@ -28,47 +28,48 @@ type packageDetails struct {
 //	-t, --type {macos | ios | appletvos}     Specify the platform of the file, or of the host app when using --upload-hosted-content. (Output by 'xcrun altool -h')
 //
 // if 'auto' is selected the 'DTPlatformName' is read from Info.plist
-func getPlatformType(logger log.Logger, ipaPath, platform string) (platformType, error) {
-	fallback := func() platformType {
-		logger.Warnf("Failed to analyze %s, fallback platform type to ios", ipaPath)
+func getPlatformType(logger log.Logger, ipaPath, platform string) platformType {
+	fallback := func(autoErr error) platformType {
+		logger.Warnf("Automatic platform type lookup failed: %s", autoErr)
+		logger.Warnf("Falling back to using `ios` as platform type")
 		return iOS
 	}
 	switch platform {
 	case "auto":
 		// *.pkg -> macos
 		if ipaPath == "" {
-			return macOS, nil
+			return macOS
 		}
 		plistPath, err := ipa.UnwrapEmbeddedInfoPlist(ipaPath)
 		if err != nil {
-			return fallback(), fmt.Errorf("failed to unwrap Info.plist: %w", err)
+			return fallback(fmt.Errorf("failed to unwrap Info.plist: %w", err))
 		}
 		plist, err := plistutil.NewPlistDataFromFile(plistPath)
 		if err != nil {
-			return fallback(), fmt.Errorf("failed to read Info.plist: %w", err)
+			return fallback(fmt.Errorf("failed to read Info.plist: %w", err))
 		}
 		platform, ok := plist.GetString("DTPlatformName")
 		if !ok {
-			return fallback(), fmt.Errorf("no DTPlatformName found in Info.plist")
+			return fallback(fmt.Errorf("no DTPlatformName found in Info.plist"))
 		}
 		switch platform {
 		case "appletvos", "appletvsimulator":
-			return tvOS, nil
+			return tvOS
 		case "macosx":
-			return macOS, nil
+			return macOS
 		case "iphoneos", "iphonesimulator", "watchos", "watchsimulator":
-			return iOS, nil
+			return iOS
 		default:
-			return fallback(), fmt.Errorf("unknown platform: %s", platform)
+			return fallback(fmt.Errorf("unknown platform: %s", platform))
 		}
 	case "ios":
-		return iOS, nil
+		return iOS
 	case "macos":
-		return macOS, nil
+		return macOS
 	case "tvos":
-		return tvOS, nil
+		return tvOS
 	default:
-		return fallback(), fmt.Errorf("inconsistent platform: %s", platform)
+		return fallback(fmt.Errorf("inconsistent platform: %s", platform))
 	}
 }
 
