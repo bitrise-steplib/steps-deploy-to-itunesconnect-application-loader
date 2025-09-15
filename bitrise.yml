@@ -16,3 +16,7 @@ workflows:
     steps:
     - git::https://github.com/bitrise-steplib/steps-readme-generator.git@main:
         title: Generate README
+    - path::./:
+        title: Lint Step
+        inputs:
+        - lint: "yes"

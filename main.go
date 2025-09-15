@@ -106,7 +106,7 @@ func handleSessionDataError(logger log.Logger, err error) {
 	}
 
 	if networkErr, ok := err.(devportalservice.NetworkError); ok && networkErr.Status == http.StatusUnauthorized {
-		fmt.Println()
+		logger.Println()
 		logger.Warnf("%s", "Unauthorized to query Connected Apple Developer Portal Account. This happens by design, with a public app's PR build, to protect secrets.")
 
 		return
@@ -211,7 +211,7 @@ func main() {
 	if cfg.BuildURL != "" && cfg.BuildAPIToken != "" {
 		devportalConnectionProvider = devportalservice.NewBitriseClient(httpretry.NewHTTPClient().StandardClient(), cfg.BuildURL, string(cfg.BuildAPIToken))
 	} else {
-		fmt.Println()
+		logger.Println()
 		logger.Warnf("Connected Apple Developer Portal Account not found. Step is not running on bitrise.io: BITRISE_BUILD_URL and BITRISE_BUILD_API_TOKEN envs are not set")
 	}
 	var conn *devportalservice.AppleDeveloperConnection
@@ -275,7 +275,11 @@ func main() {
 
 	// Platform type parameter was introduced in Xcode 13
 	if !sliceutil.IsStringInSlice(typeKey, additionalParams) {
-		uploadParams = append(uploadParams, typeKey, string(getPlatformType(logger, cfg.IpaPath, cfg.Platform)))
+		platform, err := getPlatformType(logger, cfg.IpaPath, cfg.Platform)
+		if err != nil {
+			logger.Warnf("Automatic platform type lookup failed: %s", err)
+		}
+		uploadParams = append(uploadParams, typeKey, string(platform))
 	}
 
 	if xcodeVersion.MajorVersion < 26 && cfg.AppID != "" {

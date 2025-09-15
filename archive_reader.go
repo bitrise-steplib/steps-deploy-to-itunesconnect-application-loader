@@ -28,7 +28,7 @@ type packageDetails struct {
 //	-t, --type {macos | ios | appletvos}     Specify the platform of the file, or of the host app when using --upload-hosted-content. (Output by 'xcrun altool -h')
 //
 // if 'auto' is selected the 'DTPlatformName' is read from Info.plist
-func getPlatformType(logger log.Logger, ipaPath, platform string) platformType {
+func getPlatformType(logger log.Logger, ipaPath, platform string) (platformType, error) {
 	fallback := func() platformType {
 		logger.Warnf("Failed to analyze %s, fallback platform type to ios", ipaPath)
 		return iOS
@@ -37,38 +37,38 @@ func getPlatformType(logger log.Logger, ipaPath, platform string) platformType {
 	case "auto":
 		// *.pkg -> macos
 		if ipaPath == "" {
-			return macOS
+			return macOS, nil
 		}
 		plistPath, err := ipa.UnwrapEmbeddedInfoPlist(ipaPath)
 		if err != nil {
-			return fallback()
+			return fallback(), fmt.Errorf("failed to unwrap Info.plist: %w", err)
 		}
 		plist, err := plistutil.NewPlistDataFromFile(plistPath)
 		if err != nil {
-			return fallback()
+			return fallback(), fmt.Errorf("failed to read Info.plist: %w", err)
 		}
 		platform, ok := plist.GetString("DTPlatformName")
 		if !ok {
-			return fallback()
+			return fallback(), fmt.Errorf("no DTPlatformName found in Info.plist")
 		}
 		switch platform {
 		case "appletvos", "appletvsimulator":
-			return tvOS
+			return tvOS, nil
 		case "macosx":
-			return macOS
+			return macOS, nil
 		case "iphoneos", "iphonesimulator", "watchos", "watchsimulator":
-			return iOS
+			return iOS, nil
 		default:
-			return fallback()
+			return fallback(), fmt.Errorf("unknown platform: %s", platform)
 		}
 	case "ios":
-		return iOS
+		return iOS, nil
 	case "macos":
-		return macOS
+		return macOS, nil
 	case "tvos":
-		return tvOS
+		return tvOS, nil
 	default:
-		return fallback()
+		return fallback(), fmt.Errorf("inconsistent platform: %s", platform)
 	}
 }
 

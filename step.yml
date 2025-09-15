@@ -79,6 +79,75 @@ inputs:
     - apple_id
     - "off"
 
+- ipa_path: $BITRISE_IPA_PATH
+  opts:
+    title: IPA path
+    description: |-
+      Path to your IPA file to be deployed.
+      **NOTE:** This input or `PKG path` is required.
+
+- pkg_path: $BITRISE_PKG_PATH
+  opts:
+    title: PKG path
+    description: |-
+      Path to your PKG file to be deployed.
+      **NOTE:** This input or `IPA path` is required.
+
+- platform: auto
+  opts:
+    title: Platform
+    description: |-
+      Specify the platform of the file. When `auto` is selected the step uses the `Info.plist` to set the platform.
+    value_options:
+    - auto
+    - ios
+    - macos
+    - tvos
+
+- app_id: ""
+  opts:
+    category: App details
+    title: App's Apple ID in App Store Connect
+    summary: Specifies the Apple ID of the app.
+    description: |-
+      Specifies the Apple ID of the app.
+
+      Available on the **App Information** page of your app in App Store Connect. For example: `1023456789`.
+    is_required: false
+
+- bundle_id: ""
+  opts:
+    category: App details
+    title: Bundle ID
+    summary: The bundle identifier of the app to be deployed.
+    description: |-
+      The bundle identifier of the app to be deployed.
+
+      When *App's Apple ID in App Store Connect* (`app_id`) is provided, will read it from `Info.plist` when not provided.
+    is_required: false
+
+- bundle_version: ""
+  opts:
+    category: App details
+    title: Bundle version
+    summary: Specifies the CFBundleVersion of the app package.
+    description: |-
+       Specifies the CFBundleVersion of the app package.
+
+       When *App's Apple ID in App Store Connect* (`app_id`) is provided, will read it from `Info.plist` when not provided.
+    is_required: false
+
+- bundle_short_version_string: ""
+  opts:
+    category: App details
+    title: CFBundleShortVersionString
+    summary: Specifies the CFBundleShortVersionString of the app package.
+    description: |-
+      The version number of the app to be deployed.
+
+      When *App's Apple ID in App Store Connect* (`app_id`) is provided, will read it from `Info.plist` when not provided.
+    is_required: false
+
 - api_key_path: ""
   opts:
     category: App Store Connect connection override
@@ -127,75 +196,6 @@ inputs:
       [AppleID Website](https://appleid.apple.com). It can be used to
       bypass two-factor authentication.
     is_sensitive: true
-
-- ipa_path: $BITRISE_IPA_PATH
-  opts:
-    title: IPA path
-    description: |-
-      Path to your IPA file to be deployed.
-      **NOTE:** This input or `PKG path` is required.
-
-- pkg_path: $BITRISE_PKG_PATH
-  opts:
-    title: PKG path
-    description: |-
-      Path to your PKG file to be deployed.
-      **NOTE:** This input or `IPA path` is required.
-
-- platform: auto
-  opts:
-    title: Platform
-    description: |-
-      Specify the platform of the file. When `auto` is selected the step uses the `Info.plist` to set the platform.
-    value_options:
-    - auto
-    - ios
-    - macos
-    - tvos
-
-- app_id: ""
-  opts:
-    category: App details
-    title: App Store Connect app Apple ID
-    summary: Specifies the Apple ID of the app.
-    description: |-
-      Specifies the Apple ID of the app.
-
-      Available on the **App Information** page of your app in App Store Connect. For example: `1023456789`.
-    is_required: false
-
-- bundle_id: ""
-  opts:
-    category: App details
-    title: Bundle ID
-    summary: The bundle identifier of the app to be deployed.
-    description: |-
-      The bundle identifier of the app to be deployed.
-
-      When `apple_is` is provided, will read it from `Info.plist` when not provided.
-    is_required: false
-
-- bundle_version: ""
-  opts:
-    category: App details
-    title: Bundle version
-    summary: Specifies the CFBundleVersion of the app package.
-    description: |-
-       Specifies the CFBundleVersion of the app package.
-
-       When `apple_is` is provided, will read it from `Info.plist` when not provided.
-    is_required: false
-
-- bundle_short_version_string: ""
-  opts:
-    category: App details
-    title: CFBundleShortVersionString
-    summary: Specifies the CFBundleShortVersionString of the app package.
-    description: |-
-      The version number of the app to be deployed.
-
-      When `apple_is` is provided, will read it from `Info.plist` when not provided.
-    is_required: false
 
 - verbose_log: "no"
   opts:
