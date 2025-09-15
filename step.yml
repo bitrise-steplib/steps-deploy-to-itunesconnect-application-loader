@@ -221,4 +221,6 @@ inputs:
     description: |-
       Options added to the end of the `altool` call.
       You can use multiple options, separated by a space
-      character. Example: `--notarize-app --asc-provider" <<provider_id>>`
+      character. Example:
+      - `--team-id <<wwdr_team_id>>` (Xcode 26 and above)
+      - `--asc-provider" <<provider_id>>` (Xcode 16)

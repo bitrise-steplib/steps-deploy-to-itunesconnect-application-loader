@@ -46,7 +46,6 @@ workflows:
     steps:
     - path::./:
         inputs:
-        - ipa_path: /var/folders/r5/gkvczn3j2tb0m79nwby9fjv80000gq/T/deploy2766821977/Application Loader Test.ipa
         - app_id: 1437806916
         - connection: "off"
         - api_key_path: $BITFALL_APPSTORECONNECT_API_KEY_URL
