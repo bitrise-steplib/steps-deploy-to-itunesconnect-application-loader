@@ -1,6 +1,10 @@
 # github.com/avast/retry-go/v4 v4.6.1
 ## explicit; go 1.18
 github.com/avast/retry-go/v4
+# github.com/bitrise-io/go-pkcs12 v0.0.0-20230815095624-feb898696e02
+## explicit; go 1.19
+github.com/bitrise-io/go-pkcs12
+github.com/bitrise-io/go-pkcs12/internal/rc2
 # github.com/bitrise-io/go-steputils v1.0.6
 ## explicit; go 1.15
 github.com/bitrise-io/go-steputils/input
@@ -18,17 +22,37 @@ github.com/bitrise-io/go-utils/pointers
 github.com/bitrise-io/go-utils/retry
 github.com/bitrise-io/go-utils/sliceutil
 github.com/bitrise-io/go-utils/ziputil
+# github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.27
+## explicit; go 1.17
+github.com/bitrise-io/go-utils/v2/command
+github.com/bitrise-io/go-utils/v2/env
+github.com/bitrise-io/go-utils/v2/fileutil
+github.com/bitrise-io/go-utils/v2/log
+github.com/bitrise-io/go-utils/v2/log/colorstring
+github.com/bitrise-io/go-utils/v2/pathutil
 # github.com/bitrise-io/go-xcode v1.3.0
 ## explicit; go 1.20
 github.com/bitrise-io/go-xcode/appleauth
+github.com/bitrise-io/go-xcode/certificateutil
 github.com/bitrise-io/go-xcode/devportalservice
+github.com/bitrise-io/go-xcode/exportoptions
 github.com/bitrise-io/go-xcode/ipa
 github.com/bitrise-io/go-xcode/models
 github.com/bitrise-io/go-xcode/plistutil
+github.com/bitrise-io/go-xcode/profileutil
 github.com/bitrise-io/go-xcode/utility
+# github.com/bitrise-io/go-xcode/v2 v2.0.0-alpha.67
+## explicit; go 1.22
+github.com/bitrise-io/go-xcode/v2/artifacts
+github.com/bitrise-io/go-xcode/v2/internal/zip
+github.com/bitrise-io/go-xcode/v2/metaparser
+github.com/bitrise-io/go-xcode/v2/zip
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
+# github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa
+## explicit
+github.com/fullsailor/pkcs7
 # github.com/hashicorp/go-cleanhttp v0.5.2
 ## explicit; go 1.13
 github.com/hashicorp/go-cleanhttp
@@ -38,9 +62,15 @@ github.com/hashicorp/go-retryablehttp
 # github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 ## explicit
 github.com/kballard/go-shellquote
+# github.com/pkg/errors v0.9.1
+## explicit
+github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 ## explicit
 github.com/pmezard/go-difflib/difflib
+# github.com/ryanuber/go-glob v1.0.0
+## explicit
+github.com/ryanuber/go-glob
 # github.com/stretchr/objx v0.5.2
 ## explicit; go 1.20
 github.com/stretchr/objx
@@ -49,6 +79,9 @@ github.com/stretchr/objx
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/assert/yaml
 github.com/stretchr/testify/mock
+# golang.org/x/crypto v0.31.0
+## explicit; go 1.20
+golang.org/x/crypto/pbkdf2
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3

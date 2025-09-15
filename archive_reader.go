@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	v1Log "github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/ipa"
 	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/metaparser"
@@ -28,9 +28,9 @@ type packageDetails struct {
 //	-t, --type {macos | ios | appletvos}     Specify the platform of the file, or of the host app when using --upload-hosted-content. (Output by 'xcrun altool -h')
 //
 // if 'auto' is selected the 'DTPlatformName' is read from Info.plist
-func getPlatformType(ipaPath, platform string) platformType {
+func getPlatformType(logger log.Logger, ipaPath, platform string) platformType {
 	fallback := func() platformType {
-		v1Log.Warnf("Failed to analyze %s, fallback platform type to ios", ipaPath)
+		logger.Warnf("Failed to analyze %s, fallback platform type to ios", ipaPath)
 		return iOS
 	}
 	switch platform {

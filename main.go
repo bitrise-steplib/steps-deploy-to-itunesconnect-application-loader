@@ -16,12 +16,11 @@ import (
 	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/fileutil"
-	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
 	httpretry "github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/sliceutil"
 	fileutilv2 "github.com/bitrise-io/go-utils/v2/fileutil"
-	logv2 "github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-io/go-xcode/utility"
@@ -101,21 +100,21 @@ const notConnected = `Connected Apple Developer Portal Account not found.
 Most likely because there is no Apple Developer Portal Account connected to the build.
 Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/`
 
-func handleSessionDataError(err error) {
+func handleSessionDataError(logger log.Logger, err error) {
 	if err == nil {
 		return
 	}
 
 	if networkErr, ok := err.(devportalservice.NetworkError); ok && networkErr.Status == http.StatusUnauthorized {
 		fmt.Println()
-		log.Warnf("%s", "Unauthorized to query Connected Apple Developer Portal Account. This happens by design, with a public app's PR build, to protect secrets.")
+		logger.Warnf("%s", "Unauthorized to query Connected Apple Developer Portal Account. This happens by design, with a public app's PR build, to protect secrets.")
 
 		return
 	}
 
 	fmt.Println()
-	log.Errorf("Failed to activate Bitrise Apple Developer Portal connection: %s", err)
-	log.Warnf("Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/")
+	logger.Errorf("Failed to activate Bitrise Apple Developer Portal connection: %s", err)
+	logger.Warnf("Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/")
 }
 
 func getKeyPath(keyID string, keyPaths []string) (string, error) {
@@ -165,20 +164,20 @@ const (
 )
 
 func main() {
-	logger := logv2.NewLogger()
+	logger := log.NewLogger()
 	parser := metaparser.New(logger, fileutilv2.NewFileManager())
 
 	var cfg Config
 	if err := stepconf.Parse(&cfg); err != nil {
-		failf("Error: %s", err)
+		failf(logger, "Error: %s", err)
 	}
 
 	stepconf.Print(cfg)
 	fmt.Println()
-	log.SetEnableDebugLog(cfg.IsVerbose)
+	logger.EnableDebugLog(cfg.IsVerbose)
 
 	if err := cfg.validateArtifact(); err != nil {
-		failf("Input error: %s", err)
+		failf(logger, "Input error: %s", err)
 	}
 
 	cfg.AppID = strings.TrimSpace(cfg.AppID)
@@ -194,18 +193,18 @@ func main() {
 		APIKeyPath:          string(cfg.APIKeyPath),
 	}
 	if err := authInputs.Validate(); err != nil {
-		failf("Issue with authentication related inputs: %v", err)
+		failf(logger, "Issue with authentication related inputs: %v", err)
 	}
 
 	xcodeVersion, err := utility.GetXcodeVersion()
 	if err != nil {
-		failf("Failed to determine Xcode version: %s", err)
+		failf(logger, "Failed to determine Xcode version: %s", err)
 	}
 
 	// Select and fetch Apple authenication source
 	authSources, err := parseAuthSources(cfg.BitriseConnection)
 	if err != nil {
-		failf("Invalid input: unexpected value for Bitrise Apple Developer Connection (%s)", cfg.BitriseConnection)
+		failf(logger, "Invalid input: unexpected value for Bitrise Apple Developer Connection (%s)", cfg.BitriseConnection)
 	}
 
 	var devportalConnectionProvider *devportalservice.BitriseClient
@@ -213,35 +212,35 @@ func main() {
 		devportalConnectionProvider = devportalservice.NewBitriseClient(httpretry.NewHTTPClient().StandardClient(), cfg.BuildURL, string(cfg.BuildAPIToken))
 	} else {
 		fmt.Println()
-		log.Warnf("Connected Apple Developer Portal Account not found. Step is not running on bitrise.io: BITRISE_BUILD_URL and BITRISE_BUILD_API_TOKEN envs are not set")
+		logger.Warnf("Connected Apple Developer Portal Account not found. Step is not running on bitrise.io: BITRISE_BUILD_URL and BITRISE_BUILD_API_TOKEN envs are not set")
 	}
 	var conn *devportalservice.AppleDeveloperConnection
 	if cfg.BitriseConnection != "off" && devportalConnectionProvider != nil {
 		var err error
 		conn, err = devportalConnectionProvider.GetAppleDeveloperConnection()
 		if err != nil {
-			handleSessionDataError(err)
+			handleSessionDataError(logger, err)
 		}
 
 		if conn != nil && (conn.APIKeyConnection == nil && conn.AppleIDConnection == nil) {
 			fmt.Println()
-			log.Debugf("%s", notConnected)
+			logger.Debugf("%s", notConnected)
 		}
 	}
 
 	authConfig, err := appleauth.Select(conn, authSources, authInputs)
 	if err != nil {
-		failf("Could not configure Apple Service authentication: %v", err)
+		failf(logger, "Could not configure Apple Service authentication: %v", err)
 	}
 	if authConfig.AppleID != nil && authConfig.AppleID.AppSpecificPassword == "" {
-		log.Warnf("If 2FA enabled, Application-specific password is required when using Apple ID authentication.")
+		logger.Warnf("If 2FA enabled, Application-specific password is required when using Apple ID authentication.")
 	}
 
 	// Prepare command
 	var authParams []string
 	if authConfig.APIKey != nil {
 		if err := writeAPIKey(string(authConfig.APIKey.PrivateKey), authConfig.APIKey.KeyID); err != nil {
-			failf("Failed to prepare certificate for authentication, error: %s", err)
+			failf(logger, "Failed to prepare certificate for authentication, error: %s", err)
 		}
 		authParams = []string{"--apiKey", authConfig.APIKey.KeyID, "--apiIssuer", authConfig.APIKey.IssuerID}
 	} else {
@@ -257,28 +256,28 @@ func main() {
 		filePth = cfg.PkgPath
 	}
 	if filePth == "" {
-		failf("Either IPA path or PKG path has to be provided")
+		failf(logger, "Either IPA path or PKG path has to be provided")
 	}
 
 	additionalParams, err := shellquote.Split(cfg.AdditionalParams)
 	if err != nil {
-		failf("Failed to parse additional parameters, error: %s", err)
+		failf(logger, "Failed to parse additional parameters, error: %s", err)
 	}
 
 	uploadParams := []string{"--upload-package", "-f", filePth}
 	// Platform type parameter was introduced in Xcode 13
 	if xcodeVersion.MajorVersion >= 13 && !sliceutil.IsStringInSlice(typeKey, additionalParams) {
-		uploadParams = append(uploadParams, typeKey, string(getPlatformType(cfg.IpaPath, cfg.Platform)))
+		uploadParams = append(uploadParams, typeKey, string(getPlatformType(logger, cfg.IpaPath, cfg.Platform)))
 	}
 
 	if cfg.AppID != "" { // If App ID is provided, BundleID, Version and ShortVersion must be provided too, or read from the package
 		if cfg.IpaPath == "" {
-			failf("App ID not supported with PKG upload yet.")
+			failf(logger, "App ID not supported with PKG upload yet.")
 		}
 
 		packageDetails, err := readPackageDetails(parser, filePth)
 		if err != nil {
-			failf("Failed to read package details: %s", err)
+			failf(logger, "Failed to read package details: %s", err)
 		}
 		if cfg.BundleID == "" {
 			cfg.BundleID = packageDetails.bundleID
@@ -302,9 +301,9 @@ func main() {
 	altoolParams := append([]string{"altool"}, uploadParams...)
 	altoolParams = append(altoolParams, authParams...)
 	altoolParams = append(altoolParams, additionalParams...)
-	out, err := uploadWithRetry(newAltoolUploader(altoolParams, filePth, authConfig), cfg.RetryTimes)
+	out, err := uploadWithRetry(logger, newAltoolUploader(logger, altoolParams, filePth, authConfig), cfg.RetryTimes)
 	if err != nil {
-		failf("Uploading IPA failed: %s", err)
+		failf(logger, "Uploading IPA failed: %s", err)
 	}
 
 	if matches := regexp.MustCompile(`(?i)Generated JWT: (.*)`).FindStringSubmatch(out); len(matches) == 2 {
@@ -313,7 +312,7 @@ func main() {
 
 	fmt.Println(out)
 
-	log.Donef("IPA uploaded")
+	logger.Donef("IPA uploaded")
 }
 
 type uploader interface {
@@ -321,13 +320,14 @@ type uploader interface {
 }
 
 type altoolUploader struct {
+	logger       log.Logger
 	altoolParams []string
 	filePth      string
 	authConfig   appleauth.Credentials
 }
 
-func newAltoolUploader(altoolParams []string, filePth string, authConfig appleauth.Credentials) uploader {
-	return altoolUploader{altoolParams: altoolParams, filePth: filePth, authConfig: authConfig}
+func newAltoolUploader(logger log.Logger, altoolParams []string, filePth string, authConfig appleauth.Credentials) uploader {
+	return altoolUploader{logger: logger, altoolParams: altoolParams, filePth: filePth, authConfig: authConfig}
 }
 
 func (a altoolUploader) upload() (string, string, error) {
@@ -338,7 +338,7 @@ func (a altoolUploader) upload() (string, string, error) {
 	cmd.SetStderr(io.MultiWriter(&eb, os.Stderr))
 
 	fileName := filepath.Base(a.filePth)
-	log.Infof("Uploading - %s ...", fileName)
+	a.logger.Infof("Uploading - %s ...", fileName)
 
 	commandStr := cmd.PrintableCommandArgs()
 	authConfig := a.authConfig
@@ -350,7 +350,7 @@ func (a altoolUploader) upload() (string, string, error) {
 			commandStr = strings.ReplaceAll(commandStr, authConfig.AppleID.AppSpecificPassword, "[REDACTED]")
 		}
 	}
-	log.Printf("$ %s", commandStr)
+	a.logger.Printf("$ %s", commandStr)
 
 	err := cmd.Run()
 	ioString := sb.String()
@@ -370,7 +370,7 @@ func (a altoolUploader) upload() (string, string, error) {
 	return ioString, errorString, nil
 }
 
-func uploadWithRetry(uploader uploader, retryTimes string, opts ...retry.Option) (string, error) {
+func uploadWithRetry(logger log.Logger, uploader uploader, retryTimes string, opts ...retry.Option) (string, error) {
 	var retriableRegexes = []*regexp.Regexp{
 		// https://bitrise.atlassian.net/browse/STEP-1190
 		regexp.MustCompile(`(?s).*Unable to determine the application using bundleId.*-19201.*`),
@@ -393,11 +393,11 @@ func uploadWithRetry(uploader uploader, retryTimes string, opts ...retry.Option)
 		retry.LastErrorOnly(true),
 		retry.OnRetry(func(n uint, err error) {
 			if n == 0 {
-				log.Warnf("Upload failed, but we recognized it as possibly recoverable error, retrying...")
+				logger.Warnf("Upload failed, but we recognized it as possibly recoverable error, retrying...")
 			} else if n != attempts-1 {
-				log.Warnf("Attempt %d failed, retrying...", n+1)
+				logger.Warnf("Attempt %d failed, retrying...", n+1)
 			} else {
-				log.Warnf("Attempt %d failed", attempts)
+				logger.Warnf("Attempt %d failed", attempts)
 			}
 		}),
 	}
@@ -428,7 +428,7 @@ func uploadWithRetry(uploader uploader, retryTimes string, opts ...retry.Option)
 	return result, nil
 }
 
-func failf(format string, v ...interface{}) {
-	log.Errorf(format, v...)
+func failf(logger log.Logger, format string, v ...interface{}) {
+	logger.Errorf(format, v...)
 	os.Exit(1)
 }
