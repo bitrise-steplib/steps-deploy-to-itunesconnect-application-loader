@@ -108,161 +108,172 @@ func Test_getKeyPath(t *testing.T) {
 func Test_uploadSuccessful(t *testing.T) {
 	uploader := createUploaderWithSuccess()
 
-	result, err := uploadWithRetry(log.NewLogger(), uploader, "10")
+	out, res, err := uploadWithRetry(log.NewLogger(), uploader, "10")
 
 	assert.NoError(t, err)
-	assert.Equal(t, result, "success")
+	assert.Equal(t, out, "done")
+	assert.Equal(t, res, altoolResult{SuccessMessage: "Upload done"})
 	uploader.AssertNumberOfCalls(t, "upload", 1)
 }
 
 func Test_uploadFailsWithUnknownError(t *testing.T) {
 	uploader := createUploaderWithUnknownError()
 
-	_, err := uploadWithRetry(log.NewLogger(), uploader, "10")
+	_, res, err := uploadWithRetry(log.NewLogger(), uploader, "10")
 
 	assert.Error(t, err)
+	assert.Equal(t, res, altoolResult{})
 	uploader.AssertNumberOfCalls(t, "upload", 1)
 }
 
 func Test_uploadRetriesOnUnableToDetermine(t *testing.T) {
 	uploader := createUploaderWithUnableToDetermineError()
 
-	_, err := uploadWithRetry(log.NewLogger(), uploader, "10", retry.Delay(0))
+	_, res, err := uploadWithRetry(log.NewLogger(), uploader, "10", retry.Delay(0))
 
 	assert.Error(t, err)
+	assert.Equal(t, res, altoolResult{})
 	uploader.AssertNumberOfCalls(t, "upload", 10)
 }
 
 func Test_uploadRetriesOnTransporterService(t *testing.T) {
 	uploader := createUploaderWithTransporterService()
 
-	_, err := uploadWithRetry(log.NewLogger(), uploader, "10", retry.Delay(0))
+	_, res, err := uploadWithRetry(log.NewLogger(), uploader, "10", retry.Delay(0))
 
 	assert.Error(t, err)
+	assert.Equal(t, res, altoolResult{})
 	uploader.AssertNumberOfCalls(t, "upload", 10)
 }
 
 func Test_uploadRetriesOnInvalidResponse(t *testing.T) {
 	uploader := createUploaderWithInvalidResponse()
 
-	_, err := uploadWithRetry(log.NewLogger(), uploader, "10", retry.Delay(0))
+	_, res, err := uploadWithRetry(log.NewLogger(), uploader, "10", retry.Delay(0))
 
 	assert.Error(t, err)
+	assert.Equal(t, res, altoolResult{})
 	uploader.AssertNumberOfCalls(t, "upload", 10)
 }
 
 func Test_uploadRetriesOnUnableToAuthenticateResponse(t *testing.T) {
 	uploader := createUploaderWithUnableToAuthenticateResponse()
 
-	_, err := uploadWithRetry(log.NewLogger(), uploader, "10", retry.Delay(0))
+	_, res, err := uploadWithRetry(log.NewLogger(), uploader, "10", retry.Delay(0))
 
 	assert.Error(t, err)
+	assert.Equal(t, res, altoolResult{})
 	uploader.AssertNumberOfCalls(t, "upload", 10)
 }
 
 func Test_uploadRetriesSpecificTimes(t *testing.T) {
 	uploader := createUploaderWithUnableToAuthenticateResponse()
 
-	_, err := uploadWithRetry(log.NewLogger(), uploader, "5", retry.Delay(0))
+	_, res, err := uploadWithRetry(log.NewLogger(), uploader, "5", retry.Delay(0))
 
 	assert.Error(t, err)
+	assert.Equal(t, res, altoolResult{})
 	uploader.AssertNumberOfCalls(t, "upload", 5)
 }
 
 func Test_uploadRetriesDefaultTimes(t *testing.T) {
 	uploader := createUploaderWithUnableToAuthenticateResponse()
 
-	_, err := uploadWithRetry(log.NewLogger(), uploader, "", retry.Delay(0))
+	_, res, err := uploadWithRetry(log.NewLogger(), uploader, "", retry.Delay(0))
 
 	assert.Error(t, err)
+	assert.Equal(t, res, altoolResult{})
 	uploader.AssertNumberOfCalls(t, "upload", 10)
 }
 
 func Test_uploadRetriesOnRequestTimedOutResponse(t *testing.T) {
 	uploader := createUploaderWithRequestTimedOutResponse()
 
-	_, err := uploadWithRetry(log.NewLogger(), uploader, "10", retry.Delay(0))
+	_, res, err := uploadWithRetry(log.NewLogger(), uploader, "10", retry.Delay(0))
 
 	assert.Error(t, err)
+	assert.Equal(t, res, altoolResult{})
 	uploader.AssertNumberOfCalls(t, "upload", 10)
 }
 
 func Test_uploadRecoversAfterErrorOnValidResponse(t *testing.T) {
 	uploader := createUploaderWithFailingAndRecoveringResponse()
 
-	result, err := uploadWithRetry(log.NewLogger(), uploader, "10", retry.Delay(0))
+	out, res, err := uploadWithRetry(log.NewLogger(), uploader, "10", retry.Delay(0))
 
 	assert.NoError(t, err)
-	assert.Equal(t, result, "success")
+	assert.Equal(t, out, "success")
+	assert.Equal(t, res, altoolResult{SuccessMessage: "Upload done"})
 	uploader.AssertNumberOfCalls(t, "upload", 6)
 }
 
 func Test_uploadRecoversAfterUndefinedSoftwareType(t *testing.T) {
 	uploader := createUploaderWithUndefinedSoftwareType()
 
-	result, err := uploadWithRetry(log.NewLogger(), uploader, "10", retry.Delay(0))
+	out, res, err := uploadWithRetry(log.NewLogger(), uploader, "10", retry.Delay(0))
 
 	assert.NoError(t, err)
-	assert.Equal(t, result, "success")
+	assert.Equal(t, out, "success")
+	assert.Equal(t, res, altoolResult{SuccessMessage: "Upload done"})
 	uploader.AssertNumberOfCalls(t, "upload", 2)
 }
 
 func createUploaderWithUnknownError() (uploader *mockUploader) {
 	uploader = new(mockUploader)
-	uploader.On("upload").Return("", "unknown-error", errors.New("test-error"))
+	uploader.On("upload").Return("", "unknown-error", altoolResult{}, errors.New("test-error"))
 	return
 }
 
 func createUploaderWithUnableToDetermineError() (uploader *mockUploader) {
 	uploader = new(mockUploader)
-	uploader.On("upload").Return("", unableToDetermine, errors.New("test-error"))
+	uploader.On("upload").Return("", unableToDetermine, altoolResult{}, errors.New("test-error"))
 	return
 }
 
 func createUploaderWithTransporterService() (uploader *mockUploader) {
 	uploader = new(mockUploader)
-	uploader.On("upload").Return("", transporterService, errors.New("test-error"))
+	uploader.On("upload").Return("", transporterService, altoolResult{}, errors.New("test-error"))
 	return
 }
 
 func createUploaderWithUndefinedSoftwareType() (uploader *mockUploader) {
 	uploader = new(mockUploader)
-	uploader.On("upload").Return("", undefinedSoftwareType, errors.New("test-error")).Once()
-	uploader.On("upload").Return("success", "", nil)
+	uploader.On("upload").Return("", undefinedSoftwareType, altoolResult{}, errors.New("test-error")).Once()
+	uploader.On("upload").Return("", "success", altoolResult{SuccessMessage: "Upload done"}, nil)
 	return
 }
 
 func createUploaderWithInvalidResponse() (uploader *mockUploader) {
 	uploader = new(mockUploader)
-	uploader.On("upload").Return("", invalidResponse, errors.New("test-error"))
+	uploader.On("upload").Return("", invalidResponse, altoolResult{}, errors.New("test-error"))
 	return
 }
 
 func createUploaderWithUnableToAuthenticateResponse() (uploader *mockUploader) {
 	uploader = new(mockUploader)
-	uploader.On("upload").Return("", unableToAuthenticate, errors.New("test-error"))
+	uploader.On("upload").Return("", unableToAuthenticate, altoolResult{}, errors.New("test-error"))
 	return
 }
 
 func createUploaderWithRequestTimedOutResponse() (uploader *mockUploader) {
 	uploader = new(mockUploader)
-	uploader.On("upload").Return("", requestTimedOut, errors.New("test-error"))
+	uploader.On("upload").Return("", requestTimedOut, altoolResult{}, errors.New("test-error"))
 	return
 }
 
 func createUploaderWithFailingAndRecoveringResponse() (uploader *mockUploader) {
 	uploader = new(mockUploader)
-	uploader.On("upload").Return("", unableToDetermine, errors.New("test-error")).Once()
-	uploader.On("upload").Return("", transporterService, errors.New("test-error")).Once()
-	uploader.On("upload").Return("", invalidResponse, errors.New("test-error")).Once()
-	uploader.On("upload").Return("", requestTimedOut, errors.New("test-error")).Once()
-	uploader.On("upload").Return("", unableToAuthenticate, errors.New("test-error")).Once()
-	uploader.On("upload").Return("success", "", nil)
+	uploader.On("upload").Return("", unableToDetermine, altoolResult{}, errors.New("test-error")).Once()
+	uploader.On("upload").Return("", transporterService, altoolResult{}, errors.New("test-error")).Once()
+	uploader.On("upload").Return("", invalidResponse, altoolResult{}, errors.New("test-error")).Once()
+	uploader.On("upload").Return("", requestTimedOut, altoolResult{}, errors.New("test-error")).Once()
+	uploader.On("upload").Return("", unableToAuthenticate, altoolResult{}, errors.New("test-error")).Once()
+	uploader.On("upload").Return("", "success", altoolResult{SuccessMessage: "Upload done"}, nil)
 	return
 }
 
 func createUploaderWithSuccess() (uploader *mockUploader) {
 	uploader = new(mockUploader)
-	uploader.On("upload").Return("success", "", nil)
+	uploader.On("upload").Return("", "done", altoolResult{SuccessMessage: "Upload done"}, nil)
 	return
 }

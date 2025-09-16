@@ -77,7 +77,7 @@ You can also run this step directly with [Bitrise CLI](https://github.com/bitris
 | `app_password` | Use this input if TFA is enabled on the Apple ID but no app-specific password has been added to the used Bitrise Apple ID connection.  **NOTE:** Application-specific passwords can be created on the [AppleID Website](https://appleid.apple.com). It can be used to bypass two-factor authentication. | sensitive |  |
 | `verbose_log` | If this input is set, the Step will print additional logs for debugging. | required | `no` |
 | `retries` | Retry times when failed, set to `0` for infinite retry |  | `10` |
-| `altool_options` | Options added to the end of the `altool` call. You can use multiple options, separated by a space character. Example: - `--team-id <<wwdr_team_id>>` (Xcode 26 and above) - `--asc-provider" <<provider_id>>` (Xcode 16) |  |  |
+| `altool_options` | Options added to the end of the `altool` call. You can use multiple options, separated by a space character. Example: - `--team-id <<wwdr_team_id>>` (Xcode 26 and above) - `--asc-provider" <<provider_id>>` (Xcode 16) |  | `--show-progress` |
 </details>
 
 <details>

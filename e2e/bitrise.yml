@@ -19,7 +19,7 @@ app:
   - BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
 
 workflows:
-  test_api_key_connection_auth:
+  manual_test_api_key_connection_auth:
     title: Test API key connection authentication
     before_run:
     - _prepare_test
@@ -29,7 +29,7 @@ workflows:
         - connection: automatic
         - altool_options: --output-format xml
 
-  manual_test_apple_id_connection_auth:
+  test_apple_id_connection_auth:
     title: Test Apple ID connection authentication
     before_run:
     - _prepare_test
@@ -38,7 +38,6 @@ workflows:
         inputs:
         - app_id: 1437806916
         - connection: apple_id
-        - altool_options: --output-format xml
 
   manual_test_api_key_input_auth:
     title: Test API key Step Input authentication
@@ -47,10 +46,12 @@ workflows:
     steps:
     - path::./:
         inputs:
+        - app_id: 1437806916
+        - bundle_id: com.bitrise.Application-Loader-Test2
         - connection: "off"
         - api_key_path: $BITFALL_APPSTORECONNECT_API_KEY_URL
         - api_issuer: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
-        - altool_options: --output-format json
+        - verbose: "yes"
 
   _prepare_test:
     title: Prepare test

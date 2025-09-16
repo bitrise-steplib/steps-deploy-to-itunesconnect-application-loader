@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/pathutil"
 	httpretry "github.com/bitrise-io/go-utils/retry"
+	"github.com/bitrise-io/go-utils/v2/errorutil"
 	fileutilv2 "github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/appleauth"
@@ -157,11 +159,6 @@ func writeAPIKey(privateKey, keyID string) error {
 	return fileutil.WriteStringToFile(keyPath, privateKey)
 }
 
-const (
-	typeKey    = "--type"
-	verboseKey = "--verbose"
-)
-
 func main() {
 	logger := log.NewLogger()
 	parser := metaparser.New(logger, fileutilv2.NewFileManager())
@@ -274,7 +271,8 @@ func main() {
 			failf(logger, "App ID not supported with PKG upload yet.")
 		}
 
-		if cfg.BundleID == "" && cfg.BundleVersion == "" && cfg.BundleShortVersionString == "" { // We need to read package details
+		// Every Input overrides the respective Info.plist value parsed from the IPA
+		if cfg.BundleID == "" || cfg.BundleVersion == "" || cfg.BundleShortVersionString == "" {
 			packageDetails, err = readPackageDetails(parser, filePth, packageDetails)
 			if err != nil {
 				logger.Infof("Provide App details Inputs to skip Info.plist parsing: app_id, bundle_id, bundle_version, bundle_short_version_string.")
@@ -283,23 +281,34 @@ func main() {
 		}
 	}
 
-	altoolParams := buildAltoolCommand(logger, filePth, packageDetails, cfg.Platform, additionalParams, authParams, xcodeVersion.MajorVersion, cfg.AppID, cfg.IsVerbose)
-	out, err := uploadWithRetry(logger, newAltoolUploader(logger, altoolParams, filePth, authConfig), cfg.RetryTimes)
+	altoolCommand := buildAltoolCommand(logger, filePth, packageDetails, cfg.Platform, additionalParams, authParams, xcodeVersion.MajorVersion, cfg.AppID, cfg.IsVerbose)
+	errorOut, result, err := uploadWithRetry(logger, newAltoolUploader(logger, altoolCommand, filePth, authConfig), cfg.RetryTimes)
 	if err != nil {
-		failf(logger, "Uploading IPA failed: %s", err)
+		logger.Println()
+		logger.Errorf("%s", errorOut)
+		logger.Println()
+		for _, warning := range result.getWarnings() {
+			logger.Warnf("%s", warning)
+		}
+		logger.Println()
+		failf(logger, errorutil.FormattedError(fmt.Errorf("Uploading IPA failed: %w", err)))
 	}
 
-	if matches := regexp.MustCompile(`(?i)Generated JWT: (.*)`).FindStringSubmatch(out); len(matches) == 2 {
-		out = strings.ReplaceAll(out, matches[1], "[REDACTED]")
+	logger.Println()
+	logger.Printf("%s", errorOut)
+	logger.Println()
+	for _, warning := range result.getWarnings() {
+		logger.Warnf("%s", warning)
 	}
-
-	fmt.Println(out)
-
+	logger.Println()
+	if result.SuccessMessage != "" {
+		logger.Donef("%s", result.SuccessMessage)
+	}
 	logger.Donef("IPA uploaded")
 }
 
 type uploader interface {
-	upload() (string, string, error)
+	upload() (string, string, altoolResult, error)
 }
 
 type altoolUploader struct {
@@ -313,11 +322,11 @@ func newAltoolUploader(logger log.Logger, altoolParams []string, filePth string,
 	return altoolUploader{logger: logger, altoolParams: altoolParams, filePth: filePth, authConfig: authConfig}
 }
 
-func (a altoolUploader) upload() (string, string, error) {
+func (a altoolUploader) upload() (string, string, altoolResult, error) {
 	cmd := command.New("xcrun", a.altoolParams...)
 	var sb bytes.Buffer
 	var eb bytes.Buffer
-	cmd.SetStdout(io.MultiWriter(&sb, os.Stdout))
+	cmd.SetStdout(&sb)
 	cmd.SetStderr(io.MultiWriter(&eb, os.Stderr))
 
 	fileName := filepath.Base(a.filePth)
@@ -335,25 +344,28 @@ func (a altoolUploader) upload() (string, string, error) {
 	}
 	a.logger.Printf("$ %s", commandStr)
 
+	var altoolErrors []error
 	err := cmd.Run()
-	ioString := sb.String()
-	errorString := eb.String()
-
 	if err != nil {
-		return ioString, errorString, err
+		altoolErrors = []error{err}
 	}
+	stdOut := sb.String()
+	errorOut := eb.String()
 
 	// Xcode 26RC altool always returns exit code 0, even on some failures
-	errorRe := regexp.MustCompile(`(?s).*ERROR:.*`)
-	sucessRe := regexp.MustCompile(`(?s).*UPLOAD SUCCEEDED.*`)
-	if errorRe.MatchString(errorString) && !sucessRe.MatchString(ioString) && !sucessRe.MatchString(errorString) {
-		return ioString, errorString, fmt.Errorf("Upload failed, output: %s", errorString)
+	result, err := parseAltoolOutput(a.logger, stdOut, errorOut, slices.Contains(a.altoolParams, "json"))
+	if err != nil {
+		altoolErrors = append(altoolErrors, err)
 	}
 
-	return ioString, errorString, nil
+	if len(altoolErrors) > 0 {
+		// return either JSON parsing, or command execution error, in this order
+		return stdOut, errorOut, result, altoolErrors[len(altoolErrors)-1]
+	}
+	return stdOut, errorOut, result, nil
 }
 
-func uploadWithRetry(logger log.Logger, uploader uploader, retryTimes string, opts ...retry.Option) (string, error) {
+func uploadWithRetry(logger log.Logger, uploader uploader, retryTimes string, opts ...retry.Option) (string, altoolResult, error) {
 	var retriableRegexes = []*regexp.Regexp{
 		// https://bitrise.atlassian.net/browse/STEP-1190
 		regexp.MustCompile(`(?s).*Unable to determine the application using bundleId.*-19201.*`),
@@ -364,7 +376,6 @@ func uploadWithRetry(logger log.Logger, uploader uploader, retryTimes string, op
 		regexp.MustCompile(`(?s).*The request timed out.*`),
 	}
 
-	var result string
 	parsedRetryTimes, err := strconv.ParseInt(retryTimes, 10, 32)
 	attempts := uint(parsedRetryTimes)
 	if err != nil {
@@ -387,15 +398,19 @@ func uploadWithRetry(logger log.Logger, uploader uploader, retryTimes string, op
 
 	mOpts = append(mOpts, opts...)
 
+	var errorOut string
+	var result altoolResult
 	err = retry.Do(
 		func() error {
-			r, errorString, err := uploader.upload()
-			result = r
+			var err error
+			var stdOut string
+			stdOut, errorOut, result, err = uploader.upload()
+			logger.Debugf("%s", stdOut)
 			if err != nil {
-				fmt.Printf("Upload error, checking retries: %s\n", err)
 				for _, re := range retriableRegexes {
-					matched := re.MatchString(errorString)
+					matched := re.MatchString(errorOut)
 					if matched {
+						fmt.Printf("Upload error, checking retries: %s\n", err)
 						return err
 					}
 				}
@@ -405,10 +420,8 @@ func uploadWithRetry(logger log.Logger, uploader uploader, retryTimes string, op
 			return nil
 		},
 		mOpts...)
-	if err != nil {
-		return "", err
-	}
-	return result, nil
+
+	return errorOut, result, err
 }
 
 func failf(logger log.Logger, format string, v ...interface{}) {

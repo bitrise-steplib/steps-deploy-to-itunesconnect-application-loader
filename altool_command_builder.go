@@ -5,6 +5,12 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 )
 
+const (
+	typeKey         = "--type"
+	verboseKey      = "--verbose"
+	outputFormatKey = "--output-format"
+)
+
 func buildAltoolCommand(logger log.Logger, filePth string, packageDetails packageDetails, platform string, additionalParams []string, authParams []string, xcodeMajorVersion int64, appID string, isVerbose bool) []string {
 	var uploadParams []string
 	if xcodeMajorVersion >= 26 {
@@ -34,6 +40,12 @@ func buildAltoolCommand(logger log.Logger, filePth string, packageDetails packag
 		}
 	}
 
+	// Set JSON output format so we can parse the output better
+	if !sliceutil.IsStringInSlice(outputFormatKey, additionalParams) {
+		additionalParams = append(additionalParams, outputFormatKey, "json")
+	} else {
+		logger.Warnf("Custom %s set, altool output parsing might fail!", outputFormatKey)
+	}
 	if isVerbose && !sliceutil.IsStringInSlice(verboseKey, additionalParams) {
 		additionalParams = append(additionalParams, verboseKey)
 	}
