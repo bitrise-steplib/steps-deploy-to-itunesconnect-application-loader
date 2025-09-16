@@ -113,7 +113,7 @@ func handleSessionDataError(logger log.Logger, err error) {
 		return
 	}
 
-	fmt.Println()
+	logger.Println()
 	logger.Errorf("Failed to activate Bitrise Apple Developer Portal connection: %s", err)
 	logger.Warnf("Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/")
 }
@@ -169,7 +169,7 @@ func main() {
 	}
 
 	stepconf.Print(cfg)
-	fmt.Println()
+	logger.Println()
 	logger.EnableDebugLog(cfg.IsVerbose)
 
 	if err := cfg.validateArtifact(); err != nil {
@@ -219,7 +219,7 @@ func main() {
 		}
 
 		if conn != nil && (conn.APIKeyConnection == nil && conn.AppleIDConnection == nil) {
-			fmt.Println()
+			logger.Println()
 			logger.Debugf("%s", notConnected)
 		}
 	}

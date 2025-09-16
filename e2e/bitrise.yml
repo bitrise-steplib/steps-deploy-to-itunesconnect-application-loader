@@ -104,7 +104,7 @@ workflows:
         inputs:
         - build_version: $BUILD_NUMBER
         - plist_path: $INFO_PLIST_PATH
-    - xcode-archive@5.8.1:
+    - xcode-archive:
         title: Create Archive
         inputs:
         - distribution_method: app-store
