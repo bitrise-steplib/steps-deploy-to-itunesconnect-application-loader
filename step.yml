@@ -214,7 +214,7 @@ inputs:
     description: |-
       Retry times when failed, set to `0` for infinite retry
 
-- altool_options: "--show-progress"
+- altool_options: --show-progress
   opts:
     category: Debugging
     title: Additional options for `altool` call
