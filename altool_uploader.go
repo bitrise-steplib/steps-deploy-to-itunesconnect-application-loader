@@ -112,7 +112,7 @@ func parseAltoolOutput(logger log.Logger, stdOut, errorOut string, isJson bool) 
 		if result, err = parseJSONOutput(logger, stdOut); err == nil {
 			return result, result.getError()
 		}
-		logger.Warnf("Could not parse altool output as JSON: %s", stdOut)
+		logger.Warnf("Could not parse altool output as JSON: %v, out: %s", err, stdOut)
 	}
 
 	// Fallback to text parsing

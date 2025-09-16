@@ -302,7 +302,7 @@ func main() {
 	}
 	logger.Println()
 	if result.SuccessMessage != "" {
-		logger.Donef("%s", result.SuccessMessage)
+		logger.Infof("%s", result.SuccessMessage)
 	}
 	logger.Donef("IPA uploaded")
 }
