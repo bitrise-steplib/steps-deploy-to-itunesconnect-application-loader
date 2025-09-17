@@ -19,7 +19,7 @@ app:
   - BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
 
 workflows:
-  test_api_key_connection_auth:
+  manual_test_api_key_connection_auth:
     title: Test API key connection authentication
     before_run:
     - _prepare_test
@@ -36,10 +36,10 @@ workflows:
     steps:
     - path::./:
         inputs:
+        - app_id: 1437806916
         - connection: apple_id
-        - altool_options: --output-format xml
 
-  test_api_key_input_auth:
+  manual_test_api_key_input_auth:
     title: Test API key Step Input authentication
     before_run:
     - _prepare_test
@@ -49,7 +49,7 @@ workflows:
         - connection: "off"
         - api_key_path: $BITFALL_APPSTORECONNECT_API_KEY_URL
         - api_issuer: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
-        - altool_options: --output-format xml
+        - verbose_log: "yes"
 
   _prepare_test:
     title: Prepare test
@@ -108,3 +108,4 @@ workflows:
         - distribution_method: app-store
         - project_path: $BITRISE_PROJECT_PATH
         - scheme: $BITRISE_SCHEME
+        - log_formatter: xcodebuild
