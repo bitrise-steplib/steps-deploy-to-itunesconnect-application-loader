@@ -39,6 +39,7 @@ type productError struct {
 	Code             int            `json:"code"`
 	Message          string         `json:"message"`
 	UserInfo         userInfo       `json:"user-info"`
+	LegacyUserInfo   userInfo       `json:"userInfo"` // Xcode 16 only
 	UnderlyingErrors []productError `json:"underlying-errors"`
 }
 
@@ -91,7 +92,7 @@ func (a altoolResult) getWarnings() []error {
 }
 
 func parseJSONOutput(_ log.Logger, stdOut string) (altoolResult, error) {
-	jsonRegexp := regexp.MustCompile(`(?m)^\s*{\n?(.*\n?)*}\s*$`)
+	jsonRegexp := regexp.MustCompile(`(?m)^\s*{(.*\n?)*}\s*$`)
 	match := jsonRegexp.FindString(stdOut)
 	if match == "" {
 		return altoolResult{}, fmt.Errorf("failed to find JSON output in altool output: %s", stdOut)

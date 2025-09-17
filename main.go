@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -192,14 +191,14 @@ func main() {
 		failf(logger, "Issue with authentication related inputs: %v", err)
 	}
 
-	xcodeVersion, err := utility.GetXcodeVersion()
-	if err != nil {
-		failf(logger, "Failed to determine Xcode version: %s", err)
+	xcodeVersion, uploadErr := utility.GetXcodeVersion()
+	if uploadErr != nil {
+		failf(logger, "Failed to determine Xcode version: %s", uploadErr)
 	}
 
 	// Select and fetch Apple authenication source
-	authSources, err := parseAuthSources(cfg.BitriseConnection)
-	if err != nil {
+	authSources, uploadErr := parseAuthSources(cfg.BitriseConnection)
+	if uploadErr != nil {
 		failf(logger, "Invalid input: unexpected value for Bitrise Apple Developer Connection (%s)", cfg.BitriseConnection)
 	}
 
@@ -220,13 +219,13 @@ func main() {
 
 		if conn != nil && (conn.APIKeyConnection == nil && conn.AppleIDConnection == nil) {
 			logger.Println()
-			logger.Debugf("%s", notConnected)
+			logger.Errorf("%s", notConnected)
 		}
 	}
 
-	authConfig, err := appleauth.Select(conn, authSources, authInputs)
-	if err != nil {
-		failf(logger, "Could not configure Apple Service authentication: %v", err)
+	authConfig, uploadErr := appleauth.Select(conn, authSources, authInputs)
+	if uploadErr != nil {
+		failf(logger, "Could not configure Apple Service authentication: %v", uploadErr)
 	}
 	if authConfig.AppleID != nil && authConfig.AppleID.AppSpecificPassword == "" {
 		logger.Warnf("If 2FA enabled, Application-specific password is required when using Apple ID authentication.")
@@ -255,9 +254,9 @@ func main() {
 		failf(logger, "Either IPA path or PKG path has to be provided")
 	}
 
-	additionalParams, err := shellquote.Split(cfg.AdditionalParams)
-	if err != nil {
-		failf(logger, "Failed to parse additional parameters, error: %s", err)
+	additionalParams, uploadErr := shellquote.Split(cfg.AdditionalParams)
+	if uploadErr != nil {
+		failf(logger, "Failed to parse additional parameters, error: %s", uploadErr)
 	}
 
 	packageDetails := packageDetails{
@@ -273,27 +272,21 @@ func main() {
 
 		// Every Input overrides the respective Info.plist value parsed from the IPA
 		if cfg.BundleID == "" || cfg.BundleVersion == "" || cfg.BundleShortVersionString == "" {
-			packageDetails, err = readPackageDetails(parser, filePth, packageDetails)
-			if err != nil {
+			packageDetails, uploadErr = readPackageDetails(parser, filePth, packageDetails)
+			if uploadErr != nil {
 				logger.Infof("Provide App details Inputs to skip Info.plist parsing: app_id, bundle_id, bundle_version, bundle_short_version_string.")
-				failf(logger, "Could not read App details from Info.plist: %s", err)
+				failf(logger, "Could not read App details from Info.plist: %s", uploadErr)
 			}
 		}
 	}
 
 	altoolCommand := buildAltoolCommand(logger, filePth, packageDetails, cfg.Platform, additionalParams, authParams, xcodeVersion.MajorVersion, cfg.AppID, cfg.IsVerbose)
-	errorOut, result, err := uploadWithRetry(logger, newAltoolUploader(logger, altoolCommand, filePth, authConfig), cfg.RetryTimes)
-	if err != nil {
-		logger.Println()
-		logger.Errorf("%s", errorOut)
-		logger.Println()
-		for _, warning := range result.getWarnings() {
-			logger.Warnf("%s", warning)
-		}
-		logger.Println()
-		failf(logger, errorutil.FormattedError(fmt.Errorf("Uploading IPA failed: %w", err)))
-	}
+	errorOut, result, uploadErr := uploadWithRetry(logger, newAltoolUploader(logger, altoolCommand, filePth, authConfig), cfg.RetryTimes)
 
+	// Xcode 16 (but not Xcode 26) prints the bearer token to stderr
+	if matches := regexp.MustCompile(`(?i)"Bearer(.*?)"`).FindStringSubmatch(errorOut); len(matches) == 2 {
+		errorOut = strings.ReplaceAll(errorOut, matches[1], "[REDACTED]")
+	}
 	logger.Println()
 	logger.Printf("%s", errorOut)
 	logger.Println()
@@ -301,6 +294,10 @@ func main() {
 		logger.Warnf("%s", warning)
 	}
 	logger.Println()
+
+	if uploadErr != nil {
+		failf(logger, errorutil.FormattedError(fmt.Errorf("Uploading IPA failed: %w", uploadErr)))
+	}
 	if result.SuccessMessage != "" {
 		logger.Infof("%s", result.SuccessMessage)
 	}
@@ -327,7 +324,7 @@ func (a altoolUploader) upload() (string, string, altoolResult, error) {
 	var sb bytes.Buffer
 	var eb bytes.Buffer
 	cmd.SetStdout(&sb)
-	cmd.SetStderr(io.MultiWriter(&eb, os.Stderr))
+	cmd.SetStderr(&eb)
 
 	fileName := filepath.Base(a.filePth)
 	a.logger.Infof("Uploading - %s ...", fileName)
@@ -405,12 +402,12 @@ func uploadWithRetry(logger log.Logger, uploader uploader, retryTimes string, op
 			var err error
 			var stdOut string
 			stdOut, errorOut, result, err = uploader.upload()
-			logger.Debugf("%s", stdOut)
+			logger.Debugf("%s", stdOut) // JSON output is only visible in debug mode
 			if err != nil {
 				for _, re := range retriableRegexes {
 					matched := re.MatchString(errorOut)
 					if matched {
-						fmt.Printf("Upload error, checking retries: %s\n", err)
+						logger.Printf("Upload error, checking retries: %s\n", err)
 						return err
 					}
 				}

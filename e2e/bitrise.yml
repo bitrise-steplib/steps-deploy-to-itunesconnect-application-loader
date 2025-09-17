@@ -46,12 +46,10 @@ workflows:
     steps:
     - path::./:
         inputs:
-        - app_id: 1437806916
-        - bundle_id: com.bitrise.Application-Loader-Test2
         - connection: "off"
         - api_key_path: $BITFALL_APPSTORECONNECT_API_KEY_URL
         - api_issuer: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
-        - verbose: "yes"
+        - verbose_log: "yes"
 
   _prepare_test:
     title: Prepare test

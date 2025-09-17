@@ -269,6 +269,32 @@ func Test_parseJSONOutput(t *testing.T) {
 			wantOutputErr: nil,
 			wantErr:       false,
 		},
+		{
+			name: "Xcode 16 altool output format",
+			stdOut: `
+{"tool-version":"8.303.16303","tool-path":"\/Applications\/Xcode16.4.app\/Contents\/SharedFrameworks\/ContentDeliveryServices.framework\/Versions\/A\/Frameworks\/AppStoreService.framework","os-version":"15.6.1","product-errors":[{"message":"Unable to upload archive.","userInfo":{"NSLocalizedDescription":"Unable to upload archive.","NSLocalizedFailureReason":"Failed to authenticate for session: (\n    \"Error Domain=ITunesConnectionAuthenticationErrorDomain Code=-26000 \\\"Failure to authenticate.\\\" UserInfo={NSLocalizedRecoverySuggestion=Failure to authenticate., NSLocalizedDescription=Failure to authenticate., NSLocalizedFailureReason=App Store operation failed.}\"\n)"},"code":-1011}]}
+`, want: altoolResult{
+				OSVersion:   "15.6.1",
+				ToolVersion: "8.303.16303",
+				ToolPath:    "/Applications/Xcode16.4.app/Contents/SharedFrameworks/ContentDeliveryServices.framework/Versions/A/Frameworks/AppStoreService.framework",
+				ProductErrors: []productError{
+					{
+						Code:    -1011,
+						Message: "Unable to upload archive.",
+						LegacyUserInfo: userInfo{
+							NSLocalizedDescription:   "Unable to upload archive.",
+							NSLocalizedFailureReason: "Failed to authenticate for session: (\n    \"Error Domain=ITunesConnectionAuthenticationErrorDomain Code=-26000 \\\"Failure to authenticate.\\\" UserInfo={NSLocalizedRecoverySuggestion=Failure to authenticate., NSLocalizedDescription=Failure to authenticate., NSLocalizedFailureReason=App Store operation failed.}\"\n)",
+						},
+					},
+				},
+			},
+			wantOutputErr: uploadError{
+				description: "Unable to upload archive.",
+				reason:      "Failed to authenticate for session: (\n    \"Error Domain=ITunesConnectionAuthenticationErrorDomain Code=-26000 \\\"Failure to authenticate.\\\" UserInfo={NSLocalizedRecoverySuggestion=Failure to authenticate., NSLocalizedDescription=Failure to authenticate., NSLocalizedFailureReason=App Store operation failed.}\"\n)",
+				errorCode:   -1011,
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -309,10 +335,10 @@ func Test_parseAltoolOutput(t *testing.T) {
 		want        *altoolResult
 		wantErr     bool
 	}{
-		/*{
-					name:   "Fallback to non-JSON output, Internal Server Error",
-					logger: log.NewLogger(),
-					errorString: `Uploading IPA failed: Upload failed, output: Running altool at path '/Applications/Xcode26RC.app/Contents/SharedFrameworks/ContentDelivery.framework/Resources/altool'...
+		{
+			name:   "Fallback to non-JSON output, Internal Server Error",
+			logger: log.NewLogger(),
+			errorString: `Uploading IPA failed: Upload failed, output: Running altool at path '/Applications/Xcode26RC.app/Contents/SharedFrameworks/ContentDelivery.framework/Resources/altool'...
 
 		2025-09-15 12:55:08.803 ERROR: [ContentDelivery.Uploader.13AF057C0] CREATE BUILD (ASSET_UPLOAD): received status code 500; internal server error. (QRVCH6RCR4HT4P5YNGI3PYVPSQ) (500) Internal Server Error
 
@@ -331,14 +357,14 @@ func Test_parseAltoolOutput(t *testing.T) {
 
 		Request ID: QRVCH6RCR4HT4P5YNGI3PYVPSQ.0.0
 		2025-09-15 12:55:09.218 ERROR: [altool.13AF057C0] Failed to upload package.`,
-					isJson:  true,
-					want:    nil,
-					wantErr: true,
-				},
-				{
-					name:   "Fallback to non-JSON output, auth error",
-					logger: log.NewLogger(),
-					errorString: `
+			isJson:  true,
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:   "Fallback to non-JSON output, auth error",
+			logger: log.NewLogger(),
+			errorString: `
 		[stderr] Running altool at path '/Applications/Xcode26RC.app/Contents/SharedFrameworks/ContentDelivery.framework/Resources/altool'...
 		[stderr]
 		[stderr] 2025-09-16 15:37:02.262 ERROR: [altool.14AF0D200] GET APP SETTINGS: failed to authenticate. The server response was: {
@@ -365,10 +391,10 @@ func Test_parseAltoolOutput(t *testing.T) {
 		[stderr] 2025-09-16 15:37:03.040 ERROR: [CDASCAPI.14AF0D200] APP STORE CONNECT API list-apps: received status code 401, auth issue.
 		[stderr] 2025-09-16 15:37:03.041 ERROR: [altool.14AF0D200] Failed to determine the Apple ID from Bundle ID 'com.bitrise.Application-Loader-Test' with platform 'IOS'. Unable to authenticate. (-19209) (12)
 		[stderr]`,
-					isJson:  true,
-					want:    nil,
-					wantErr: true,
-				},*/
+			isJson:  true,
+			want:    nil,
+			wantErr: true,
+		},
 		{
 			name:   "JSON output",
 			logger: log.NewLogger(),

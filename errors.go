@@ -11,8 +11,8 @@ type uploadError struct {
 
 func newUploadErrorFromProductError(pe productError) uploadError {
 	return uploadError{
-		description: pe.UserInfo.NSLocalizedDescription,
-		reason:      pe.UserInfo.NSLocalizedFailureReason,
+		description: pe.UserInfo.NSLocalizedDescription + pe.LegacyUserInfo.NSLocalizedDescription,
+		reason:      pe.UserInfo.NSLocalizedFailureReason + pe.LegacyUserInfo.NSLocalizedFailureReason,
 		errorCode:   pe.Code,
 		errorID:     pe.UserInfo.IrisCode,
 	}
