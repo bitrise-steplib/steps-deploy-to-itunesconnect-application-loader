@@ -19,7 +19,7 @@ app:
   - BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
 
 workflows:
-  manual_test_api_key_connection_auth:
+  test_api_key_connection_auth:
     title: Test API key connection authentication
     before_run:
     - _prepare_test
@@ -27,17 +27,17 @@ workflows:
     - path::./:
         inputs:
         - connection: automatic
-        - altool_options: --output-format xml
+        - app_id: 1437806916
 
-  test_apple_id_connection_auth:
+  manual_test_apple_id_connection_auth:
     title: Test Apple ID connection authentication
     before_run:
     - _prepare_test
     steps:
     - path::./:
         inputs:
-        - app_id: 1437806916
         - connection: apple_id
+        - app_id: 1437806916
 
   manual_test_api_key_input_auth:
     title: Test API key Step Input authentication
