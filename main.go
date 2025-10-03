@@ -191,14 +191,14 @@ func main() {
 		failf(logger, "Issue with authentication related inputs: %v", err)
 	}
 
-	xcodeVersion, uploadErr := utility.GetXcodeVersion()
-	if uploadErr != nil {
-		failf(logger, "Failed to determine Xcode version: %s", uploadErr)
+	xcodeVersion, err := utility.GetXcodeVersion()
+	if err != nil {
+		failf(logger, "Failed to determine Xcode version: %s", err)
 	}
 
 	// Select and fetch Apple authenication source
-	authSources, uploadErr := parseAuthSources(cfg.BitriseConnection)
-	if uploadErr != nil {
+	authSources, err := parseAuthSources(cfg.BitriseConnection)
+	if err != nil {
 		failf(logger, "Invalid input: unexpected value for Bitrise Apple Developer Connection (%s)", cfg.BitriseConnection)
 	}
 
@@ -223,9 +223,9 @@ func main() {
 		}
 	}
 
-	authConfig, uploadErr := appleauth.Select(conn, authSources, authInputs)
-	if uploadErr != nil {
-		failf(logger, "Could not configure Apple Service authentication: %v", uploadErr)
+	authConfig, err := appleauth.Select(conn, authSources, authInputs)
+	if err != nil {
+		failf(logger, "Could not configure Apple Service authentication: %v", err)
 	}
 	if authConfig.AppleID != nil && authConfig.AppleID.AppSpecificPassword == "" {
 		logger.Warnf("If 2FA enabled, Application-specific password is required when using Apple ID authentication.")
@@ -254,9 +254,9 @@ func main() {
 		failf(logger, "Either IPA path or PKG path has to be provided")
 	}
 
-	additionalParams, uploadErr := shellquote.Split(cfg.AdditionalParams)
-	if uploadErr != nil {
-		failf(logger, "Failed to parse additional parameters, error: %s", uploadErr)
+	additionalParams, err := shellquote.Split(cfg.AdditionalParams)
+	if err != nil {
+		failf(logger, "Failed to parse additional parameters, error: %s", err)
 	}
 
 	packageDetails := packageDetails{
@@ -271,11 +271,15 @@ func main() {
 		}
 
 		// Every Input overrides the respective Info.plist value parsed from the IPA
-		if cfg.BundleID == "" || cfg.BundleVersion == "" || cfg.BundleShortVersionString == "" {
-			packageDetails, uploadErr = readPackageDetails(parser, filePth, packageDetails)
-			if uploadErr != nil {
+		if packageDetails.bundleID == "" || packageDetails.bundleVersion == "" || packageDetails.bundleShortVersionString == "" {
+			packageDetails, err = readPackageDetails(parser, filePth, packageDetails)
+			if err != nil {
 				logger.Infof("Provide App details Inputs to skip Info.plist parsing: app_id, bundle_id, bundle_version, bundle_short_version_string.")
-				failf(logger, "Could not read App details from Info.plist: %s", uploadErr)
+				failf(logger, "Could not read App details from Info.plist: %s", err)
+			}
+			if packageDetails.bundleID == "" || packageDetails.bundleVersion == "" || packageDetails.bundleShortVersionString == "" {
+				logger.Infof("Provide App details Inputs to skip Info.plist parsing: app_id, bundle_id, bundle_version, bundle_short_version_string.")
+				failf(logger, "Could not read all App details from Info.plist: %+v", packageDetails)
 			}
 		}
 	}
@@ -296,7 +300,7 @@ func main() {
 	logger.Println()
 
 	if uploadErr != nil {
-		failf(logger, errorutil.FormattedError(fmt.Errorf("Uploading IPA failed: %w", uploadErr)))
+		failf(logger, errorutil.FormattedError(fmt.Errorf("Uploading IPA failed: %w", err)))
 	}
 	if result.SuccessMessage != "" {
 		logger.Infof("%s", result.SuccessMessage)
