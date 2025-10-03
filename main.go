@@ -264,7 +264,7 @@ func main() {
 		bundleVersion:            cfg.BundleVersion,
 		bundleShortVersionString: cfg.BundleShortVersionString,
 	}
-	if xcodeVersion.MajorVersion >= 26 && cfg.AppID != "" {
+	if cfg.AppID != "" {
 		// If App ID is provided, BundleID, Version and ShortVersion must be provided too, or read from the package
 		if cfg.IpaPath == "" {
 			failf(logger, "App ID not supported with PKG upload yet.")
