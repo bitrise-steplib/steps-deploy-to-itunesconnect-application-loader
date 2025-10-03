@@ -24,6 +24,10 @@ type packageDetails struct {
 	bundleShortVersionString string
 }
 
+func (p packageDetails) hasMissingFields() bool {
+	return p.bundleID == "" || p.bundleVersion == "" || p.bundleShortVersionString == ""
+}
+
 // getPlatformType maps platform to an altool parameter
 //
 //	-t, --type {macos | ios | appletvos}     Specify the platform of the file, or of the host app when using --upload-hosted-content. (Output by 'xcrun altool -h')

@@ -271,13 +271,13 @@ func main() {
 		}
 
 		// Every Input overrides the respective Info.plist value parsed from the IPA
-		if packageDetails.bundleID == "" || packageDetails.bundleVersion == "" || packageDetails.bundleShortVersionString == "" {
+		if packageDetails.hasMissingFields() {
 			packageDetails, err = readPackageDetails(parser, filePth, packageDetails)
 			if err != nil {
 				logger.Infof("Provide App details Inputs to skip Info.plist parsing: app_id, bundle_id, bundle_version, bundle_short_version_string.")
 				failf(logger, "Could not read App details from Info.plist: %s", err)
 			}
-			if packageDetails.bundleID == "" || packageDetails.bundleVersion == "" || packageDetails.bundleShortVersionString == "" {
+			if packageDetails.hasMissingFields() {
 				logger.Infof("Provide App details Inputs to skip Info.plist parsing: app_id, bundle_id, bundle_version, bundle_short_version_string.")
 				failf(logger, "Could not read all App details from Info.plist: %+v", packageDetails)
 			}
