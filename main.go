@@ -299,7 +299,7 @@ func main() {
 	logger.Println()
 
 	if uploadErr != nil {
-		failf(logger, errorutil.FormattedError(fmt.Errorf("Uploading IPA failed: %w", err)))
+		failf(logger, errorutil.FormattedError(fmt.Errorf("Uploading IPA failed: %w", uploadErr)))
 	}
 	if result.SuccessMessage != "" {
 		logger.Infof("%s", result.SuccessMessage)
