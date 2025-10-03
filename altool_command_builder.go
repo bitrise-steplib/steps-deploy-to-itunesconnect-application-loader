@@ -14,7 +14,7 @@ const (
 func buildAltoolCommand(logger log.Logger, filePth string, packageDetails packageDetails, platform string, additionalParams []string, authParams []string, xcodeMajorVersion int64, appID string, isVerbose bool) []string {
 	var uploadParams []string
 	if xcodeMajorVersion >= 26 || appID != "" {
-		// Use upload-package from Xcode 26. This will cause less of a breaking change,
+		// Use upload-package from Xcode 26, or if app ID is provided. This will cause less of a breaking change,
 		// as App ID, BundleID, Version and ShortVersion are optional in Xcode 26, but required in Xcode 16.
 		uploadParams = []string{"--upload-package", filePth}
 	} else {
