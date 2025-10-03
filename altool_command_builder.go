@@ -13,8 +13,8 @@ const (
 
 func buildAltoolCommand(logger log.Logger, filePth string, packageDetails packageDetails, platform string, additionalParams []string, authParams []string, xcodeMajorVersion int64, appID string, isVerbose bool) []string {
 	var uploadParams []string
-	if xcodeMajorVersion >= 26 {
-		// Use upload-package from Xcode 26. This will cause less of a breaking change,
+	if xcodeMajorVersion >= 26 || appID != "" {
+		// Use upload-package from Xcode 26, or if app ID is provided. This will cause less of a breaking change,
 		// as App ID, BundleID, Version and ShortVersion are optional in Xcode 26, but required in Xcode 16.
 		uploadParams = []string{"--upload-package", filePth}
 	} else {
@@ -27,17 +27,13 @@ func buildAltoolCommand(logger log.Logger, filePth string, packageDetails packag
 	}
 
 	if appID != "" {
-		if xcodeMajorVersion < 26 {
-			logger.Warnf("App ID is not supported with Xcode versions below 26, ignoring it.")
-		} else {
-			// Specifies the App Store Connect Apple ID of the app. (e.g. 1023456789)
-			uploadParams = append(uploadParams, "--apple-id", appID)
-			uploadParams = append(uploadParams, "--bundle-id", packageDetails.bundleID)
-			// Specifies the CFBundleVersion of the app package.
-			uploadParams = append(uploadParams, "--bundle-version", packageDetails.bundleVersion)
-			// Specifies the CFBundleShortVersionString of the app package.
-			uploadParams = append(uploadParams, "--bundle-short-version-string", packageDetails.bundleShortVersionString)
-		}
+		// Specifies the App Store Connect Apple ID of the app. (e.g. 1023456789)
+		uploadParams = append(uploadParams, "--apple-id", appID)
+		uploadParams = append(uploadParams, "--bundle-id", packageDetails.bundleID)
+		// Specifies the CFBundleVersion of the app package.
+		uploadParams = append(uploadParams, "--bundle-version", packageDetails.bundleVersion)
+		// Specifies the CFBundleShortVersionString of the app package.
+		uploadParams = append(uploadParams, "--bundle-short-version-string", packageDetails.bundleShortVersionString)
 	}
 
 	// Set JSON output format so we can parse the output better

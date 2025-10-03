@@ -44,14 +44,15 @@ description: |-
 website: https://github.com/bitrise-steplib/steps-deploy-to-itunesconnect-application-loader
 source_code_url: https://github.com/bitrise-steplib/steps-deploy-to-itunesconnect-application-loader
 support_url: https://github.com/bitrise-steplib/steps-deploy-to-itunesconnect-application-loader/issues
+
 project_type_tags:
 - ios
 - macos
-- xamarin
 - cordova
 - ionic
 - react-native
 - flutter
+- kotlin-multiplatform
 type_tags:
 - deploy
 
