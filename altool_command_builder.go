@@ -1,7 +1,8 @@
 package main
 
 import (
-	"github.com/bitrise-io/go-utils/sliceutil"
+	"slices"
+
 	"github.com/bitrise-io/go-utils/v2/log"
 )
 
@@ -22,7 +23,7 @@ func buildAltoolCommand(logger log.Logger, filePth string, packageDetails packag
 	}
 
 	// Platform type parameter was introduced in Xcode 13
-	if !sliceutil.IsStringInSlice(typeKey, additionalParams) {
+	if !slices.Contains(additionalParams, typeKey) {
 		uploadParams = append(uploadParams, typeKey, string(getPlatformType(logger, filePth, platform)))
 	}
 
@@ -37,12 +38,12 @@ func buildAltoolCommand(logger log.Logger, filePth string, packageDetails packag
 	}
 
 	// Set JSON output format so we can parse the output better
-	if !sliceutil.IsStringInSlice(outputFormatKey, additionalParams) {
+	if !slices.Contains(additionalParams, outputFormatKey) {
 		additionalParams = append(additionalParams, outputFormatKey, "json")
 	} else {
 		logger.Warnf("Custom %s set, altool output parsing might fail!", outputFormatKey)
 	}
-	if isVerbose && !sliceutil.IsStringInSlice(verboseKey, additionalParams) {
+	if isVerbose && !slices.Contains(additionalParams, verboseKey) {
 		additionalParams = append(additionalParams, verboseKey)
 	}
 
