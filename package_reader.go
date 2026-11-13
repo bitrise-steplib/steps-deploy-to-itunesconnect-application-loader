@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/ipa"
-	"github.com/bitrise-io/go-xcode/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/artifacts"
 	"github.com/bitrise-io/go-xcode/v2/metaparser"
+	"github.com/bitrise-io/go-xcode/v2/zip"
 )
 
 type platformType string
@@ -45,17 +45,9 @@ func getPlatformType(logger log.Logger, filePath, platform string) platformType 
 		if filepath.Ext(filePath) == ".pkg" {
 			return macOS
 		}
-		plistPath, err := ipa.UnwrapEmbeddedInfoPlist(filePath)
+		platform, err := readDTPlatformName(logger, filePath)
 		if err != nil {
-			return fallback(fmt.Errorf("failed to unwrap Info.plist: %w", err))
-		}
-		plist, err := plistutil.NewPlistDataFromFile(plistPath)
-		if err != nil {
-			return fallback(fmt.Errorf("failed to read Info.plist: %w", err))
-		}
-		platform, ok := plist.GetString("DTPlatformName")
-		if !ok {
-			return fallback(fmt.Errorf("no DTPlatformName found in Info.plist"))
+			return fallback(err)
 		}
 		switch platform {
 		case "appletvos", "appletvsimulator":
@@ -76,6 +68,28 @@ func getPlatformType(logger log.Logger, filePath, platform string) platformType 
 	default:
 		return fallback(fmt.Errorf("inconsistent platform: %s", platform))
 	}
+}
+
+func readDTPlatformName(logger log.Logger, ipaPath string) (string, error) {
+	reader, err := zip.NewDefaultReader(ipaPath, logger)
+	if err != nil {
+		return "", fmt.Errorf("failed to open ipa: %w", err)
+	}
+	defer func() {
+		if err := reader.Close(); err != nil {
+			logger.Warnf("%s", err)
+		}
+	}()
+
+	plist, err := artifacts.NewIPAReader(reader).AppInfoPlist()
+	if err != nil {
+		return "", fmt.Errorf("failed to read Info.plist: %w", err)
+	}
+	platform, ok := plist.GetString("DTPlatformName")
+	if !ok {
+		return "", fmt.Errorf("no DTPlatformName found in Info.plist")
+	}
+	return platform, nil
 }
 
 func readPackageDetails(parser *metaparser.Parser, packagePath string, appInfo packageDetails) (packageDetails, error) {
