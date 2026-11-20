@@ -12,11 +12,11 @@ app:
   - BITRISE_KEYCHAIN_PATH: $HOME/Library/Keychains/login.keychain
   # Code signing
   - BITRISE_KEYCHAIN_PASSWORD: $BITRISE_KEYCHAIN_PASSWORD
-  - BITFALL_APPLE_APPLE_CERTIFICATE_URL_LIST: $BITFALL_APPLE_APPLE_CERTIFICATE_URL_LIST
-  - BITFALL_APPLE_APPLE_CERTIFICATE_PASSPHRASE_LIST: $BITFALL_APPLE_APPLE_CERTIFICATE_PASSPHRASE_LIST
+  - BLTD_APPLE_CERTIFICATE_URL_LIST: $BLTD_APPLE_CERTIFICATE_URL_LIST
+  - BLTD_APPLE_CERTIFICATE_PASSPHRASE_LIST: $BLTD_APPLE_CERTIFICATE_PASSPHRASE_LIST
   # App Store Connect Connection
-  - BITFALL_APPSTORECONNECT_API_KEY_URL: $BITFALL_APPSTORECONNECT_API_KEY_URL
-  - BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
+  - BLTD_APPSTORECONNECT_API_KEY_URL: $BLTD_APPSTORECONNECT_API_KEY_URL
+  - BLTD_APPSTORECONNECT_API_KEY_ISSUER_ID: $BLTD_APPSTORECONNECT_API_KEY_ISSUER_ID
 
 workflows:
   test_api_key_connection_auth:
@@ -27,7 +27,7 @@ workflows:
     - path::./:
         inputs:
         - connection: automatic
-        - app_id: 1437806916
+        - app_id: 6836406489
 
   manual_test_apple_id_connection_auth:
     title: Test Apple ID connection authentication
@@ -37,7 +37,7 @@ workflows:
     - path::./:
         inputs:
         - connection: apple_id
-        - app_id: 1437806916
+        - app_id: 6836406489
 
   manual_test_api_key_input_auth:
     title: Test API key Step Input authentication
@@ -47,8 +47,8 @@ workflows:
     - path::./:
         inputs:
         - connection: "off"
-        - api_key_path: $BITFALL_APPSTORECONNECT_API_KEY_URL
-        - api_issuer: $BITFALL_APPSTORECONNECT_API_KEY_ISSUER_ID
+        - api_key_path: $BLTD_APPSTORECONNECT_API_KEY_URL
+        - api_issuer: $BLTD_APPSTORECONNECT_API_KEY_ISSUER_ID
         - verbose_log: "yes"
 
   _prepare_test:
@@ -76,8 +76,8 @@ workflows:
         inputs:
         - distribution_method: app-store
         - scheme: $BITRISE_SCHEME
-        - certificate_url_list: $BITFALL_APPLE_APPLE_CERTIFICATE_URL_LIST
-        - passphrase_list: $BITFALL_APPLE_APPLE_CERTIFICATE_PASSPHRASE_LIST
+        - certificate_url_list: $BLTD_APPLE_CERTIFICATE_URL_LIST
+        - passphrase_list: $BLTD_APPLE_CERTIFICATE_PASSPHRASE_LIST
         - keychain_path: $BITRISE_KEYCHAIN_PATH
         - keychain_password: $BITRISE_KEYCHAIN_PASSWORD
     - script:
